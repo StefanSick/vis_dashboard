@@ -37,48 +37,54 @@ row1_col1, row1_col2 = st.columns([1, 1])
 
 # --- LEFT: GEOSPATIAL SELECTOR (THE BRUSH) ---
 with row1_col1:
-# 1. Year Selection
-    available_years = sorted(df_clean['year'].unique(), reverse=True)
-    selected_year = st.selectbox("Select Year", available_years)
-    df_map_filtered = df_clean[df_clean['year'] == selected_year]
+    df_map_filtered = df_clean[df_clean['year'] == selected_year].copy()
 
-    # 2. Build the figure using the "Working Style" (Graph Objects)
+    # CLEANING: Force ISO codes to be strings, uppercase, and stripped of spaces
+    df_map_filtered['iso_code'] = df_map_filtered['iso_code'].astype(str).str.upper().str.strip()
+
+    # REMOVE NON-ISO ENTRIES: Sometimes datasets include 'OWID_WRL' (World) 
+    # which Plotly doesn't know how to draw on a country map.
+    df_map_filtered = df_map_filtered[df_map_filtered['iso_code'].str.len() == 3]
+
+    # --- 2. Build the Figure ---
     fig_map = go.Figure(go.Choropleth(
         locations=df_map_filtered["iso_code"], 
         z=df_map_filtered["co2_per_capita"],
         locationmode="ISO-3", 
         colorscale="Viridis",
-        text=df_map_filtered["country"], # For hover
-        marker_line_color='darkgray',
+        text=df_map_filtered["country"],
+        marker_line_color='white',
         marker_line_width=0.5,
         colorbar_title="Tonnes/Capita",
     ))
 
     fig_map.update_layout(
         height=600,
-        margin=dict(l=0, r=0, t=50, b=0),
         geo=dict(
             showframe=False,
             showcoastlines=True,
-            projection_type='natural earth'
-        )
+            projection_type='natural earth',
+            # This force-renders the land mass even if data is missing
+            showland=True, 
+            landcolor="lightgray" 
+        ),
+        margin=dict(l=0, r=0, t=0, b=0)
     )
 
-    # 3. The Interactive Wrapper
+    # --- 3. The Interactive Component ---
     selected_point = plotly_events(
         fig_map, 
         click_event=True, 
-        key=f"map_{selected_year}", 
+        key=f"map_selector_{selected_year}", 
         override_height=600
     )
 
-    # 4. Handle the Click
+    # --- 4. Click Handling ---
     if selected_point:
-        # IMPORTANT: In go.Choropleth, the key is often 'location'
         clicked_iso = selected_point[0].get('location')
-        
         if clicked_iso:
-            match = df_clean[df_clean['iso_code'] == clicked_iso]['country'].unique()
+            # Match back to the country
+            match = df_clean[df_clean['iso_code'].str.upper().str.strip() == clicked_iso.strip().upper()]['country'].unique()
             if len(match) > 0:
                 clicked_country = match[0]
                 if clicked_country not in st.session_state.selected_countries:
