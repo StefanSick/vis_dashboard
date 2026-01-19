@@ -10,12 +10,7 @@ st.set_page_config(page_title="Global CO2 Analysis & Prediction Dashboard", layo
 
 @st.cache_data
 def load_all_data():
-<<<<<<< HEAD
-    # Using dummy data creation for demonstration; replace with your pd.read_csv calls
-    df_clean = pd.read_csv("df_clean.csv")
-    df_world = pd.read_csv("df_world.csv")
-    return df_clean, df_world
-=======
+
     try:
         df_clean = pd.read_csv("df_clean.csv")
         df_world = pd.read_csv("df_world.csv")
@@ -27,9 +22,9 @@ def load_all_data():
     except Exception as e:
         st.error(f"Error loading data: {e}")
         st.stop()
->>>>>>> 6ab093c97be6f41264f3f7d582b45ba3da865a8c
 
-df_clean, df_world = load_all_data()
+
+df_clean, df_world, df_ml= load_all_data()
 
 # --- STEP 1: Initialize Session State ---
 if 'selected_countries' not in st.session_state:
