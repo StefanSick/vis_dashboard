@@ -37,69 +37,52 @@ row1_col1, row1_col2 = st.columns([1, 1])
 
 # --- LEFT: GEOSPATIAL SELECTOR (THE BRUSH) ---
 with row1_col1:
-    st.subheader("Geospatial Distribution Analysis")
-    if st.sidebar.button("Clear Selected Countries"):
-        st.session_state.selected_countries = []
-        st.rerun()
-
-    st.sidebar.write("**Selected Countries:**", ", ".join(st.session_state.selected_countries))
-
-    # --- GEOSPATIAL SELECTOR ---
-    st.subheader("Click a country to add it to the analysis")
-
-    # 1. Year Selection
+# 1. Year Selection
     available_years = sorted(df_clean['year'].unique(), reverse=True)
-    selected_year = st.selectbox("Select Year", available_years, key="map_year")
+    selected_year = st.selectbox("Select Year", available_years)
+    df_map_filtered = df_clean[df_clean['year'] == selected_year]
 
-    # 2. Filtering
-    df_map = df_clean[df_clean['year'] == selected_year].copy()
-
-    # 3. Build a Single Figure
-    fig_map = px.choropleth(
-        data_frame=df_map,
-        locations="iso_code",
-        color="co2_per_capita",
-        locationmode="ISO-3",
-        color_continuous_scale="viridis",
-        range_color=[0, df_clean["co2_per_capita"].max()],
-        hover_name="country",
-        template="plotly_white",
-        title=f"CO₂ Emissions Per Capita in {selected_year}"
-    )
+    # 2. Build the figure using the "Working Style" (Graph Objects)
+    fig_map = go.Figure(go.Choropleth(
+        locations=df_map_filtered["iso_code"], 
+        z=df_map_filtered["co2_per_capita"],
+        locationmode="ISO-3", 
+        colorscale="Viridis",
+        text=df_map_filtered["country"], # For hover
+        marker_line_color='darkgray',
+        marker_line_width=0.5,
+        colorbar_title="Tonnes/Capita",
+    ))
 
     fig_map.update_layout(
         height=600,
         margin=dict(l=0, r=0, t=50, b=0),
-        geo=dict(projection_type='natural earth')
+        geo=dict(
+            showframe=False,
+            showcoastlines=True,
+            projection_type='natural earth'
+        )
     )
 
-    # 4. Render with plotly_events
-    # We use a key that includes the selected_year so the widget resets when the year changes
+    # 3. The Interactive Wrapper
     selected_point = plotly_events(
         fig_map, 
         click_event=True, 
-        hover_event=False, 
-        key=f"map_selector_{selected_year}",
+        key=f"map_{selected_year}", 
         override_height=600
     )
 
-    # 5. Logic to catch the click and update session state
+    # 4. Handle the Click
     if selected_point:
-        # plotly_events returns a list of dictionaries. For choropleths, 
-        # the location (ISO code) is stored in the 'location' key.
+        # IMPORTANT: In go.Choropleth, the key is often 'location'
         clicked_iso = selected_point[0].get('location')
         
         if clicked_iso:
-            # Match the ISO code back to the country name in your dataframe
             match = df_clean[df_clean['iso_code'] == clicked_iso]['country'].unique()
-            
             if len(match) > 0:
                 clicked_country = match[0]
-                
-                # Add to list if not already there
                 if clicked_country not in st.session_state.selected_countries:
                     st.session_state.selected_countries.append(clicked_country)
-                    # Force a rerun so other charts in your dashboard update immediately
                     st.rerun()
 # --- RIGHT: LINKED TIME-SERIES ---
 with row1_col2:
