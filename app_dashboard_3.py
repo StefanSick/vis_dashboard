@@ -44,7 +44,10 @@ with row1_col1:
     selected_year = st.selectbox("Select Year for Geospatial Mapping", available_years, key="map_year")
     
     df_map = df_clean[df_clean['year'] == selected_year]
-
+    st.write(f"Data shape: {df_map.shape}")
+    st.write(f"Missing iso_codes: {df_map['iso_code'].isna().sum()}")
+    st.write(f"Missing co2_per_capita: {df_map['co2_per_capita'].isna().sum()}")
+    st.dataframe(df_map.head())
     try:
         # FIX 2: Corrected Plotly Express parameters (color and color_continuous_scale)
         fig_map = px.choropleth(
