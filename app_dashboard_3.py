@@ -43,56 +43,59 @@ with row1_col1:
     available_years = sorted(df_clean['year'].unique(), reverse=True)
     selected_year = st.selectbox("Select Year", available_years, key="map_year")
     
-    # Filter for the year
+    # --- CLEANING & PREP ---
     df_map = df_clean[df_clean['year'] == selected_year].copy()
+    
+    # Force ISO codes to uppercase and remove spaces
+    df_map['iso_code'] = df_map['iso_code'].astype(str).str.upper().str.strip()
+    
+    # Force the color column to be numeric (errors='coerce' turns text into NaN)
+    df_map['co2_per_capita'] = pd.to_numeric(df_map['co2_per_capita'], errors='coerce')
+    
+    # Drop rows that are now NaN so they don't break the renderer
+    df_map = df_map.dropna(subset=['co2_per_capita', 'iso_code'])
 
     try:
+        # We calculate the max across the WHOLE dataset for a consistent color scale
+        max_val = df_clean['co2_per_capita'].max()
+
         fig_map = px.choropleth(
             data_frame=df_map,
-            locations="iso_code",        # The column with 'USA', 'CHN', etc.
-            color="co2_per_capita",     # The numerical values
+            locations="iso_code",
+            color="co2_per_capita", 
             locationmode="ISO-3",
             color_continuous_scale="Viridis",
-            # If the map is blank, explicitly setting range_color often forces it to render
-            range_color=[df_clean['co2_per_capita'].min(), df_clean['co2_per_capita'].max()],
-            hover_name="country"
-        )
-        
-        # --- THE FIX: FORCED RENDER SETTINGS ---
-        fig_map.update_geos(
-            visible=True, 
-            resolution=50,
-            showcountries=True, 
-            countrycolor="LightGrey",
-            projection_type="natural earth"
+            range_color=[0, max_val],  # Forces the color engine to activate
+            hover_name="country",
+            labels={'co2_per_capita': 'Tonnes per Capita'}
         )
         
         fig_map.update_layout(
             height=550, 
-            margin={"r":0,"t":50,"l":0,"b":0},
-            # Ensure the coloraxis is visible
+            margin=dict(l=0, r=0, t=50, b=0),
+            # This ensures the color bar is actually rendered
             coloraxis_showscale=True 
         )
 
-        # Use the plotly_events wrapper
-        # IMPORTANT: If the map is blank, try changing the key to something unique per year
+        # Plotly events
         selected_point = plotly_events(
             fig_map, 
             click_event=True, 
-            hover_event=False, 
-            key=f"map_v3_{selected_year}" 
+            key=f"map_v4_{selected_year}"
         )
 
         if selected_point:
             clicked_iso = selected_point[0]['location']
-            clicked_country = df_clean[df_clean['iso_code'] == clicked_iso]['country'].iloc[0]
-            
-            if clicked_country not in st.session_state.selected_countries:
-                st.session_state.selected_countries.append(clicked_country)
-                st.rerun()
+            # Find the country name by matching the ISO
+            match = df_clean[df_clean['iso_code'] == clicked_iso]['country'].unique()
+            if len(match) > 0:
+                clicked_country = match[0]
+                if clicked_country not in st.session_state.selected_countries:
+                    st.session_state.selected_countries.append(clicked_country)
+                    st.rerun()
 
     except Exception as e:
-        st.error(f"Map Error: {e}")
+        st.error(f"Mapping Error: {e}")
 # --- RIGHT: LINKED TIME-SERIES ---
 with row1_col2:
     st.subheader("Comparative Time-Series Analysis")
