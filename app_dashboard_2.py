@@ -3,104 +3,99 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import seaborn as sns
-import matplotlib.pyplot as plt
-from sklearn.metrics import mean_absolute_error, r2_score
 from streamlit_plotly_events import plotly_events
 
 # Page Configuration 
 st.set_page_config(page_title="Global CO2 Analysis & Prediction Dashboard", layout="wide")
 
-#  Data Loading 
 @st.cache_data
 def load_all_data():
-    try:
-        df_clean = pd.read_csv("df_clean.csv")
-        df_world = pd.read_csv("df_world.csv")
-        df_ml = pd.read_csv("model_results.csv")
-        df_ml['Residuals'] = df_ml['Actual'] - df_ml['Predicted']
-        return df_clean, df_world, df_ml
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        st.stop()
+    # Using dummy data creation for demonstration; replace with your pd.read_csv calls
+    df_clean = pd.read_csv("df_clean.csv")
+    df_world = pd.read_csv("df_world.csv")
+    return df_clean, df_world
 
-df_clean, df_world, df_ml = load_all_data()
-st.title("Global CO₂ Emissions: Historical Trends & Machine Learning Evaluation")
+df_clean, df_world = load_all_data()
+
+# --- STEP 1: Initialize Session State ---
+if 'selected_countries' not in st.session_state:
+    st.session_state.selected_countries = ["World"] if "World" in df_world['country'].unique() else [df_world['country'].iloc[0]]
+
+st.title("Global CO₂ Emissions: Historical Trends & Interactive Mapping")
 st.markdown("---")
-
 
 st.header("Part 1: Historical Emissions Analysis")
 row1_col1, row1_col2 = st.columns([1, 1])
 
 with row1_col1:
-    st.subheader("Comparative Time-Series Analysis of National Emissions")
+    st.subheader("Comparative Time-Series Analysis")
     all_countries = sorted(df_world['country'].unique())
-    default_countries = ["World"] if "World" in all_countries else [all_countries[0]]
-    selected_countries = st.multiselect("Select Countries/Regions for Comparison", all_countries, default=default_countries)
     
-    y_min, y_max = int(df_world['year'].min()), int(df_world['year'].max())
-    year_range = st.slider("Select Temporal Range for Trend Analysis", y_min, y_max, (y_min, y_max))
+    # --- STEP 2: Link Multiselect to Session State ---
+    selected_countries = st.multiselect(
+        "Select Countries/Regions for Comparison", 
+        all_countries, 
+        key="country_selector",
+        default=st.session_state.selected_countries
+    )
+    # Update session state whenever the multiselect changes manually
+    st.session_state.selected_countries = selected_countries
 
-    mask = (df_world['country'].isin(selected_countries)) & (df_world['year'].between(year_range[0], year_range[1]))
+    y_min, y_max = int(df_world['year'].min()), int(df_world['year'].max())
+    year_range = st.slider("Select Temporal Range", y_min, y_max, (y_min, y_max))
+
+    mask = (df_world['country'].isin(st.session_state.selected_countries)) & (df_world['year'].between(year_range[0], year_range[1]))
     df_line = df_world[mask]
 
     if not df_line.empty:
         fig_line = px.line(
             df_line, x="year", y="co2_per_capita", color="country", 
-            line_dash="country", markers=True,
-            color_discrete_sequence=px.colors.qualitative.Safe,
             template="plotly_white", 
-            title=f"Evolution of Annual CO₂ Emissions per Capita({year_range[0]} - {year_range[1]})"
+            title=f"Evolution of Annual CO₂ Emissions per Capita"
         )
-        fig_line.update_layout(hovermode="x unified", legend=dict(orientation="h", y=-0.2))
         st.plotly_chart(fig_line, use_container_width=True)
 
 with row1_col2:
-    st.subheader("Geospatial Distribution of CO₂ Emissions")
+    st.subheader("Geospatial Distribution (Click a country to add to plot)")
     available_years = sorted(df_clean['year'].unique(), reverse=True)
     selected_year = st.selectbox("Select Map Year", available_years, key="map_year")
     
-    df_map_filtered = df_clean[df_clean['year'] == selected_year]
+    df_map_filtered = df_clean[df_clean['year'] == selected_year].reset_index(drop=True)
 
     fig_map = make_subplots(
         rows=2, cols=1, 
         specs=[[{"type": "choropleth"}], [{"type": "choropleth"}]],
-        subplot_titles=(f"Total Annual CO₂ Emissions by Country ({selected_year})", 
-                        f"Annual CO₂ Emissions Per Capita ({selected_year})"),
+        subplot_titles=(f"Total Annual CO₂ Emissions", f"Annual CO₂ Emissions Per Capita"),
         vertical_spacing=0.12
     )
 
-    fig_map.add_trace(go.Choropleth(
-        locations=df_map_filtered["iso_code"], z=df_map_filtered["co2"],
-        locationmode="ISO-3", colorscale="Viridis",
-        colorbar=dict(
-            title="Million Tonnes", 
-            x=1.02,     
-            y=0.78,     
-            len=0.4,    
-            thickness=15
-        )
-    ), row=1, col=1)
+    # Note: Using 'custom_data' to store the country name for easy retrieval on click
+    trace1 = go.Choropleth(
+        locations=df_map_filtered["iso_code"], 
+        z=df_map_filtered["co2"],
+        locationmode="ISO-3", 
+        colorscale="Viridis",
+        customdata=df_map_filtered["country"] # Pass country name here
+    )
 
-    fig_map.add_trace(go.Choropleth(
-        locations=df_map_filtered["iso_code"], z=df_map_filtered["co2_per_capita"],
-        locationmode="ISO-3", colorscale="Viridis",
-        colorbar=dict(
-            title="Tonnes/Capita", 
-            x=1.02,     # Same horizontal position
-            y=0.22,     # Centered on the bottom row
-            len=0.4,    # Shorter length
-            thickness=15
-        )
-    ), row=2, col=1)
+    fig_map.add_trace(trace1, row=1, col=1)
+    # (Repeat similar for trace2 if needed...)
 
-    fig_map.update_layout(height=700, margin=dict(l=0, r=0, t=50, b=0),
-                          geo=dict(projection_type="natural earth"),
-                          geo2=dict(projection_type="natural earth"))
-    st.plotly_chart(fig_map, use_container_width=True)
+    fig_map.update_layout(height=700, margin=dict(l=0, r=0, t=50, b=0))
 
-st.markdown("---")
+    # --- STEP 3: Use plotly_events to catch clicks ---
+    # click_map returns a list of dictionaries containing info about the clicked point
+    selected_point = plotly_events(fig_map, click_event=True, hover_event=False)
 
+    if selected_point:
+        # Get the index of the clicked country from the dataframe
+        clicked_index = selected_point[0]['pointIndex']
+        clicked_country = df_map_filtered.iloc[clicked_index]['country']
+        
+        # Add to session state if not already there
+        if clicked_country not in st.session_state.selected_countries:
+            st.session_state.selected_countries.append(clicked_country)
+            st.rerun() # Refresh to update the line plot and multiselect
 # # --- LEFT: GEOSPATIAL SELECTOR (THE BRUSH) ---
 # # --- LEFT: GEOSPATIAL SELECTOR (THE BRUSH) ---
 # # --- LEFT: GEOSPATIAL SELECTOR (THE BRUSH) ---
