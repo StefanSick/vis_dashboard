@@ -41,33 +41,48 @@ row1_col1, row1_col2 = st.columns([1, 1])
 with row1_col1:
     st.subheader("Geospatial Distribution Analysis")
     available_years = sorted(df_clean['year'].unique(), reverse=True)
-    selected_year = st.selectbox("Select Year for Geospatial Mapping", available_years, key="map_year")
+    selected_year = st.selectbox("Select Year", available_years, key="map_year")
     
-    df_map = df_clean[df_clean['year'] == selected_year]
-    st.write(f"Data shape: {df_map.shape}")
-    st.write(f"Missing iso_codes: {df_map['iso_code'].isna().sum()}")
-    st.write(f"Missing co2_per_capita: {df_map['co2_per_capita'].isna().sum()}")
-    st.dataframe(df_map.head())
+    # Filter for the year
+    df_map = df_clean[df_clean['year'] == selected_year].copy()
+
     try:
-        # FIX 2: Corrected Plotly Express parameters (color and color_continuous_scale)
         fig_map = px.choropleth(
             data_frame=df_map,
-            locations="iso_code",
-            color="co2_per_capita", 
+            locations="iso_code",        # The column with 'USA', 'CHN', etc.
+            color="co2_per_capita",     # The numerical values
             locationmode="ISO-3",
             color_continuous_scale="Viridis",
-            labels={'co2_per_capita': 'CO₂ per Capita (tonnes)'},
-            title=f"Global Annual CO₂ per Capita in {selected_year}",
+            # If the map is blank, explicitly setting range_color often forces it to render
+            range_color=[df_clean['co2_per_capita'].min(), df_clean['co2_per_capita'].max()],
             hover_name="country"
         )
         
-        fig_map.update_layout(height=550, margin=dict(l=0, r=0, t=50, b=0),
-                              geo=dict(projection_type="natural earth"))
+        # --- THE FIX: FORCED RENDER SETTINGS ---
+        fig_map.update_geos(
+            visible=True, 
+            resolution=50,
+            showcountries=True, 
+            countrycolor="LightGrey",
+            projection_type="natural earth"
+        )
+        
+        fig_map.update_layout(
+            height=550, 
+            margin={"r":0,"t":50,"l":0,"b":0},
+            # Ensure the coloraxis is visible
+            coloraxis_showscale=True 
+        )
 
-        # Captured click events
-        selected_point = plotly_events(fig_map, click_event=True, hover_event=False, key=f"map_events_{selected_year}")
+        # Use the plotly_events wrapper
+        # IMPORTANT: If the map is blank, try changing the key to something unique per year
+        selected_point = plotly_events(
+            fig_map, 
+            click_event=True, 
+            hover_event=False, 
+            key=f"map_v3_{selected_year}" 
+        )
 
-        # FIX 3: More robust click handling using ISO codes
         if selected_point:
             clicked_iso = selected_point[0]['location']
             clicked_country = df_clean[df_clean['iso_code'] == clicked_iso]['country'].iloc[0]
@@ -77,8 +92,7 @@ with row1_col1:
                 st.rerun()
 
     except Exception as e:
-        st.error(f"Error building map: {e}")
-
+        st.error(f"Map Error: {e}")
 # --- RIGHT: LINKED TIME-SERIES ---
 with row1_col2:
     st.subheader("Comparative Time-Series Analysis")
