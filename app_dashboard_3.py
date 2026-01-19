@@ -38,66 +38,69 @@ row1_col1, row1_col2 = st.columns([1, 1])
 # --- LEFT: GEOSPATIAL SELECTOR (THE BRUSH) ---
 with row1_col1:
     st.subheader("Geospatial Distribution Analysis")
-    
+    if st.sidebar.button("Clear Selected Countries"):
+        st.session_state.selected_countries = []
+        st.rerun()
+
+    st.sidebar.write("**Selected Countries:**", ", ".join(st.session_state.selected_countries))
+
+    # --- GEOSPATIAL SELECTOR ---
+    st.subheader("Click a country to add it to the analysis")
+
     # 1. Year Selection
     available_years = sorted(df_clean['year'].unique(), reverse=True)
     selected_year = st.selectbox("Select Year", available_years, key="map_year")
-    
+
     # 2. Filtering
     df_map = df_clean[df_clean['year'] == selected_year].copy()
 
-    # --- DIAGNOSTIC CHECK ---
-    if df_map.empty:
-        st.warning(f"No data found for the year {selected_year}")
-    else:
-        # 3. BUILD THE FIGURE
-        try:
-            fig_map = px.choropleth(
-                data_frame=df_map,
-                locations="iso_code",        
-                color="co2_per_capita",     
-                locationmode="ISO-3",
-                color_continuous_scale="viridis",
-                range_color=[0, df_clean["co2_per_capita"].max()],
-                hover_name="country",
-                template="plotly_white"      
-            )
+    # 3. Build a Single Figure
+    fig_map = px.choropleth(
+        data_frame=df_map,
+        locations="iso_code",
+        color="co2_per_capita",
+        locationmode="ISO-3",
+        color_continuous_scale="viridis",
+        range_color=[0, df_clean["co2_per_capita"].max()],
+        hover_name="country",
+        template="plotly_white",
+        title=f"CO₂ Emissions Per Capita in {selected_year}"
+    )
 
-            fig_map.update_layout(
-                height=550, 
-                margin=dict(l=0, r=0, t=50, b=0),
-                geo=dict(
-                    showframe=False,
-                    showcoastlines=True,
-                    projection_type='natural earth',
-                    lakecolor='white'
-                )
-            )
+    fig_map.update_layout(
+        height=600,
+        margin=dict(l=0, r=0, t=50, b=0),
+        geo=dict(projection_type='natural earth')
+    )
 
-            # 4. RENDER WITH CLICKS
-            selected_point = plotly_events(
-                fig_map, 
-                click_event=True, 
-                key=f"render_map_{selected_year}" 
-            )
+    # 4. Render with plotly_events
+    # We use a key that includes the selected_year so the widget resets when the year changes
+    selected_point = plotly_events(
+        fig_map, 
+        click_event=True, 
+        hover_event=False, 
+        key=f"map_selector_{selected_year}",
+        override_height=600
+    )
 
-            # 5. CLICK HANDLING
-            if selected_point:
-                # plotly_events returns a list of dicts. We need the location.
-                clicked_iso = selected_point[0].get('location')
+    # 5. Logic to catch the click and update session state
+    if selected_point:
+        # plotly_events returns a list of dictionaries. For choropleths, 
+        # the location (ISO code) is stored in the 'location' key.
+        clicked_iso = selected_point[0].get('location')
+        
+        if clicked_iso:
+            # Match the ISO code back to the country name in your dataframe
+            match = df_clean[df_clean['iso_code'] == clicked_iso]['country'].unique()
+            
+            if len(match) > 0:
+                clicked_country = match[0]
                 
-                if clicked_iso:
-                    match = df_clean[df_clean['iso_code'] == clicked_iso]['country'].unique()
-                    if len(match) > 0:
-                        clicked_country = match[0]
-                        if clicked_country not in st.session_state.selected_countries:
-                            st.session_state.selected_countries.append(clicked_country)
-                            # Use st.rerun() for Streamlit 1.27+, or st.experimental_rerun() for older
-                            st.rerun()
-
-        except Exception as e:
-            st.error(f"Logic Error: {e}")
-            st.plotly_chart(fig_map, use_container_width=True)
+                # Add to list if not already there
+                if clicked_country not in st.session_state.selected_countries:
+                    st.session_state.selected_countries.append(clicked_country)
+                    # Force a rerun so other charts in your dashboard update immediately
+                    st.rerun()
 # --- RIGHT: LINKED TIME-SERIES ---
 with row1_col2:
     st.subheader("Comparative Time-Series Analysis")
