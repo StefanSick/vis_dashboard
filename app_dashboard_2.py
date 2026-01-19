@@ -17,6 +17,8 @@ def load_all_data():
     try:
         df_clean = pd.read_csv("df_clean.csv")
         df_world = pd.read_csv("df_world.csv")
+        if 'country' in df_world.columns:
+            df_world['country'] = df_world['country'].astype(str).str.strip()
         df_ml = pd.read_csv("model_results.csv")
         df_ml['Residuals'] = df_ml['Actual'] - df_ml['Predicted']
         return df_clean, df_world, df_ml
