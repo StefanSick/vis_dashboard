@@ -245,7 +245,7 @@ if not df_ml_filtered.empty:
     with row2_col2:
         st.subheader("Residual Error Distribution Analysis")
         # figsize=(10, 8.5) compensates for the lack of marginal plots to match the height
-        fig_res, ax_res = plt.subplots(figsize=(10, 8.5))
+        fig_res, ax_res = plt.subplots(figsize=(10, 10))
         
         sns.scatterplot(
             data=df_ml_filtered, 
