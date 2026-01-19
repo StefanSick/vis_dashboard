@@ -46,28 +46,28 @@ with row1_col1:
     df_map = df_clean[df_clean['year'] == selected_year]
 
     try:
-        # Using Plotly Express for the interactive map
+        # FIX 2: Corrected Plotly Express parameters (color and color_continuous_scale)
         fig_map = px.choropleth(
-        data_frame=df_map,
-        locations="iso_code",
-        color="co2_per_capita",  # Changed from z= to color=
-        locationmode="ISO-3",
-        colorscale="Viridis",
-        labels={'co2_per_capita': 'Annual CO₂ per Capita (tonnes)'},
-        title=f"Global Annual CO₂ per Capita (tonnes) in {selected_year}",
-        hover_name="country"
+            data_frame=df_map,
+            locations="iso_code",
+            color="co2_per_capita", 
+            locationmode="ISO-3",
+            color_continuous_scale="Viridis",
+            labels={'co2_per_capita': 'CO₂ per Capita (tonnes)'},
+            title=f"Global Annual CO₂ per Capita in {selected_year}",
+            hover_name="country"
         )
         
         fig_map.update_layout(height=550, margin=dict(l=0, r=0, t=50, b=0),
                               geo=dict(projection_type="natural earth"))
 
-        # Captured click events act as the 'Brush' to add countries to the next plot
+        # Captured click events
         selected_point = plotly_events(fig_map, click_event=True, hover_event=False, key=f"map_events_{selected_year}")
 
+        # FIX 3: More robust click handling using ISO codes
         if selected_point:
-            # Look up the country name based on the clicked index
-            clicked_index = selected_point[0]['pointNumber']
-            clicked_country = df_map.iloc[clicked_index]['country']
+            clicked_iso = selected_point[0]['location']
+            clicked_country = df_clean[df_clean['iso_code'] == clicked_iso]['country'].iloc[0]
             
             if clicked_country not in st.session_state.selected_countries:
                 st.session_state.selected_countries.append(clicked_country)
@@ -80,21 +80,19 @@ with row1_col1:
 with row1_col2:
     st.subheader("Comparative Time-Series Analysis")
     
-    # CLEAR SELECTION BUTTON
     if st.button("🗑️ Clear All Selections"):
         st.session_state.selected_countries = ["World"]
         st.rerun()
     
     all_countries = sorted(df_clean['country'].unique())
     
-    # This multiselect is linked to map clicks via st.session_state
+    # Linked multiselect
     chosen = st.multiselect(
-        "Currently Selected for Comparison:", 
-        all_countries, 
+        "Currently Selected Countries:", 
+        options=all_countries, 
         default=st.session_state.selected_countries,
         key="country_selector"
     )
-    # Update memory if user adds/removes via the multiselect directly
     st.session_state.selected_countries = chosen
 
     y_min, y_max = int(df_clean['year'].min()), int(df_clean['year'].max())
@@ -107,16 +105,15 @@ with row1_col2:
     if not df_line.empty:
         fig_line = px.line(
             df_line, x="year", y="co2_per_capita", color="country", 
-            line_dash="country", markers=True,
-            color_discrete_sequence=px.colors.qualitative.Safe,
+            markers=True,
             template="plotly_white", 
-            title=f"Trend: Annual CO₂ per Capita (tonnes) Over Time",
-            labels={'co2_per_capita': 'Annual CO₂ per Capita (tonnes)', 'year': 'Year'}
+            title="Trend: Annual CO₂ per Capita Over Time",
+            labels={'co2_per_capita': 'CO₂ per Capita', 'year': 'Year'}
         )
-        fig_line.update_layout(height=500, hovermode="x unified", legend=dict(orientation="h", y=-0.2))
+        fig_line.update_layout(height=500, legend=dict(orientation="h", y=-0.2))
         st.plotly_chart(fig_line, use_container_width=True)
     else:
-        st.info("💡 Click a country on the map to automatically add it to this comparison graph.")
+        st.info("Click a country on the map to add it to this comparison.")
 st.markdown("---")
 
 st.header("Part 2: Machine Learning Model Performance")
