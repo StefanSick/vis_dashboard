@@ -193,6 +193,7 @@ df_ml_filtered = df_ml[df_ml['Continent'].isin(sel_conts)]
 
 if not df_ml_filtered.empty:
     # Top-level Metrics
+    fig_res, ax_res = plt.subplots(figsize=(10, 10))
     m_col1, m_col2 = st.columns(2)
     mae = mean_absolute_error(df_ml_filtered['Actual'], df_ml_filtered['Predicted'])
     r2 = r2_score(df_ml_filtered['Actual'], df_ml_filtered['Predicted'])
