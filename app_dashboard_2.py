@@ -73,13 +73,25 @@ with row1_col2:
     fig_map.add_trace(go.Choropleth(
         locations=df_map_filtered["iso_code"], z=df_map_filtered["co2"],
         locationmode="ISO-3", colorscale="Viridis",
-        colorbar=dict(title="Million Tonnes", x=1.0)
+        colorbar=dict(
+            title="Million Tonnes", 
+            x=1.02,     
+            y=0.78,     
+            len=0.4,    
+            thickness=15
+        )
     ), row=1, col=1)
 
     fig_map.add_trace(go.Choropleth(
         locations=df_map_filtered["iso_code"], z=df_map_filtered["co2_per_capita"],
         locationmode="ISO-3", colorscale="Viridis",
-        colorbar=dict(title="Tonnes/Capita", x=1.0)
+        colorbar=dict(
+            title="Tonnes/Capita", 
+            x=1.02,     # Same horizontal position
+            y=0.22,     # Centered on the bottom row
+            len=0.4,    # Shorter length
+            thickness=15
+        )
     ), row=2, col=1)
 
     fig_map.update_layout(height=700, margin=dict(l=0, r=0, t=50, b=0),
