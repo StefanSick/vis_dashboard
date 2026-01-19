@@ -46,11 +46,11 @@ with row1_col1:
 
     if not df_line.empty:
         fig_line = px.line(
-            df_line, x="year", y="co2", color="country", 
+            df_line, x="year", y="co2_per_capita", color="country", 
             line_dash="country", markers=True,
             color_discrete_sequence=px.colors.qualitative.Safe,
             template="plotly_white", 
-            title=f"Evolution of Annual CO₂ Emissions ({year_range[0]} - {year_range[1]})"
+            title=f"Evolution of Annual CO₂ Emissions per Capita({year_range[0]} - {year_range[1]})"
         )
         fig_line.update_layout(hovermode="x unified", legend=dict(orientation="h", y=-0.2))
         st.plotly_chart(fig_line, use_container_width=True)
