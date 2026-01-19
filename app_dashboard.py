@@ -15,13 +15,14 @@ st.set_page_config(page_title="Global CO2 Dashboard", layout="wide")
 def load_all_data():
     # Historical Data
     df_clean = pd.read_csv("df_clean.csv")
+    df_world = pd.read_csv("data_world.csv")
     # ML Results (the CSV you created earlier)
     df_ml = pd.read_csv("model_results.csv")
     df_ml['Residuals'] = df_ml['Actual'] - df_ml['Predicted']
-    return df_clean, df_ml
+    return df_clean, df_world,  df_ml
 
 # Replace these names with your actual filenames
-df_clean, df_ml = load_all_data()
+df_clean, df_world, df_ml  = load_all_data()
 
 st.title("Global CO2 Emissions Analysis & Prediction")
 
@@ -65,11 +66,11 @@ if app_mode == "Global Trends & Maps":
                               geo=dict(projection_type="natural earth"),
                               geo2=dict(projection_type="natural earth"))
         
-        st.plotly_chart(fig_map, width="container")
+        st.plotly_chart(fig_map, use_container_width=True)
 
     with tab_line:
         st.header("Country Comparison Over Time")
-        all_countries = sorted(df_clean['country'].unique())
+        all_countries = sorted(df_world['country'].unique())
         selected_countries = st.multiselect("Add/Remove Countries", all_countries, default=["World"])
         
         y_min, y_max = int(df_clean['year'].min()), int(df_clean['year'].max())
@@ -82,7 +83,7 @@ if app_mode == "Global Trends & Maps":
             fig_line = px.line(df_line, x="year", y="co2", color="country", markers=True,
                                template="plotly_white", title="CO2 Emissions Trend")
             fig_line.update_layout(hovermode="x unified")
-            st.plotly_chart(fig_line, width="container")
+            st.plotly_chart(fig_line, use_container_width=True)
 
 # --- TAB 2: ML MODEL EVALUATION ---
 else:
