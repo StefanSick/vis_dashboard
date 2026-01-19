@@ -66,7 +66,7 @@ with row1_col2:
         rows=2, cols=1, 
         specs=[[{"type": "choropleth"}], [{"type": "choropleth"}]],
         subplot_titles=(f"Total Annual CO₂ Emissions by Country ({selected_year})", 
-                        f"CO₂ Emissions Per Capita ({selected_year})"),
+                        f"Annual CO₂ Emissions Per Capita ({selected_year})"),
         vertical_spacing=0.12
     )
 
