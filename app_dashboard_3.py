@@ -11,7 +11,7 @@ from streamlit_plotly_events import plotly_events
 # Page Configuration 
 st.set_page_config(page_title="Global CO2 Analysis & Prediction Dashboard", layout="wide")
 
-#  Data Loading 
+# Data Loading 
 @st.cache_data
 def load_all_data():
     try:
@@ -32,10 +32,8 @@ if "selected_countries" not in st.session_state:
 st.title("Global CO₂ Emissions: Historical Trends & Machine Learning Evaluation")
 st.markdown("---")
 
-
 st.header("Part 1: Historical Emissions Analysis")
 row1_col1, row1_col2 = st.columns([1, 1])
-
 
 # --- LEFT: GEOSPATIAL SELECTOR (THE BRUSH) ---
 with row1_col1:
@@ -48,7 +46,7 @@ with row1_col1:
     # 2. Filtering
     df_map = df_clean[df_clean['year'] == selected_year].copy()
 
-    # --- DIAGNOSTIC CHECK (You can remove these after it works) ---
+    # --- DIAGNOSTIC CHECK ---
     if df_map.empty:
         st.warning(f"No data found for the year {selected_year}")
     else:
@@ -56,14 +54,13 @@ with row1_col1:
         try:
             fig_map = px.choropleth(
                 data_frame=df_map,
-                locations="iso_code",        # Ensure your CSV column is exactly "iso_code"
-                color="co2_per_capita",     # Ensure your CSV column is exactly "co2_per_capita"
+                locations="iso_code",        
+                color="co2_per_capita",     
                 locationmode="ISO-3",
                 color_continuous_scale="viridis",
-                # Using the full dataset max ensures the color scale doesn't "break"
                 range_color=[0, df_clean["co2_per_capita"].max()],
                 hover_name="country",
-                template="plotly_white"     # White template is safest to avoid "blackout" issues
+                template="plotly_white"      
             )
 
             fig_map.update_layout(
@@ -78,7 +75,6 @@ with row1_col1:
             )
 
             # 4. RENDER WITH CLICKS
-            # Changed the key again to force a fresh render
             selected_point = plotly_events(
                 fig_map, 
                 click_event=True, 
@@ -87,18 +83,20 @@ with row1_col1:
 
             # 5. CLICK HANDLING
             if selected_point:
-                clicked_iso = selected_point[0]['location']
-                # Match the ISO back to country name
-                match = df_clean[df_clean['iso_code'] == clicked_iso]['country'].unique()
-                if len(match) > 0:
-                    clicked_country = match[0]
-                    if clicked_country not in st.session_state.selected_countries:
-                        st.session_state.selected_countries.append(clicked_country)
-                        st.rerun()
+                # plotly_events returns a list of dicts. We need the location.
+                clicked_iso = selected_point[0].get('location')
+                
+                if clicked_iso:
+                    match = df_clean[df_clean['iso_code'] == clicked_iso]['country'].unique()
+                    if len(match) > 0:
+                        clicked_country = match[0]
+                        if clicked_country not in st.session_state.selected_countries:
+                            st.session_state.selected_countries.append(clicked_country)
+                            # Use st.rerun() for Streamlit 1.27+, or st.experimental_rerun() for older
+                            st.rerun()
 
         except Exception as e:
             st.error(f"Logic Error: {e}")
-            # Fallback: Just show the static chart if the click-wrapper is failing
             st.plotly_chart(fig_map, use_container_width=True)
 # --- RIGHT: LINKED TIME-SERIES ---
 with row1_col2:
