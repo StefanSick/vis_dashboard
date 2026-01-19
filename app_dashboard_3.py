@@ -48,14 +48,14 @@ with row1_col1:
     try:
         # Using Plotly Express for the interactive map
         fig_map = px.choropleth(
-            data_frame=df_map,
-            locations="iso_code",
-            z="co2_per_capita",
-            locationmode="ISO-3",
-            colorscale="Viridis",
-            labels={'co2_per_capita': 'Annual CO₂ per Capita (tonnes)'},
-            title=f"Global Annual CO₂ per Capita (tonnes) in {selected_year}",
-            hover_name="country"
+        data_frame=df_map,
+        locations="iso_code",
+        color="co2_per_capita",  # Changed from z= to color=
+        locationmode="ISO-3",
+        colorscale="Viridis",
+        labels={'co2_per_capita': 'Annual CO₂ per Capita (tonnes)'},
+        title=f"Global Annual CO₂ per Capita (tonnes) in {selected_year}",
+        hover_name="country"
         )
         
         fig_map.update_layout(height=550, margin=dict(l=0, r=0, t=50, b=0),
