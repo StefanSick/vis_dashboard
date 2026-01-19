@@ -41,74 +41,65 @@ row1_col1, row1_col2 = st.columns([1, 1])
 with row1_col1:
     st.subheader("Geospatial Distribution Analysis")
     
-    # 1. Get the year and filter
+    # 1. Year Selection
     available_years = sorted(df_clean['year'].unique(), reverse=True)
     selected_year = st.selectbox("Select Year", available_years, key="map_year")
+    
+    # 2. Filtering
     df_map = df_clean[df_clean['year'] == selected_year].copy()
 
-    # 2. DYNAMIC COLUMN DETECTION 
-    # This prevents the "countries are gone" issue if names are slightly different
-    iso_col = [c for c in df_map.columns if 'iso' in c.lower()]
-    val_col = [c for c in df_map.columns if 'co2' in c.lower() and 'capita' in c.lower()]
-    
-    if not iso_col or not val_col:
-        st.error(f"Could not find columns. Found: {list(df_map.columns)}")
-        st.stop()
-    
-    iso_col, val_col = iso_col[0], val_col[0]
+    # --- DIAGNOSTIC CHECK (You can remove these after it works) ---
+    if df_map.empty:
+        st.warning(f"No data found for the year {selected_year}")
+    else:
+        # 3. BUILD THE FIGURE
+        try:
+            fig_map = px.choropleth(
+                data_frame=df_map,
+                locations="iso_code",        # Ensure your CSV column is exactly "iso_code"
+                color="co2_per_capita",     # Ensure your CSV column is exactly "co2_per_capita"
+                locationmode="ISO-3",
+                color_continuous_scale="viridis",
+                # Using the full dataset max ensures the color scale doesn't "break"
+                range_color=[0, df_clean["co2_per_capita"].max()],
+                hover_name="country",
+                template="plotly_white"     # White template is safest to avoid "blackout" issues
+            )
 
-    # 3. CLEANING
-    df_map[iso_col] = df_map[iso_col].astype(str).str.upper().str.strip()
-    df_map[val_col] = pd.to_numeric(df_map[val_col], errors='coerce')
-    
-    # Only drop if BOTH are missing; keep the row if at least we have a location
-    df_map = df_map.dropna(subset=[iso_col]) 
+            fig_map.update_layout(
+                height=550, 
+                margin=dict(l=0, r=0, t=50, b=0),
+                geo=dict(
+                    showframe=False,
+                    showcoastlines=True,
+                    projection_type='natural earth',
+                    lakecolor='white'
+                )
+            )
 
-    try:
-        # 4. BUILD THE MAP
-        # If iso_code length is 3, use ISO-3. If it's longer, it's likely country names.
-        sample_iso = str(df_map[iso_col].iloc[0])
-        mode = "ISO-3" if len(sample_iso) <= 3 else "country names"
+            # 4. RENDER WITH CLICKS
+            # Changed the key again to force a fresh render
+            selected_point = plotly_events(
+                fig_map, 
+                click_event=True, 
+                key=f"render_map_{selected_year}" 
+            )
 
-        fig_map = px.choropleth(
-            data_frame=df_map,
-            locations=iso_col,
-            color=val_col,
-            locationmode=mode,
-            color_continuous_scale="Viridis",
-            range_color=[0, df_clean[val_col].max()],
-            hover_name="country" if "country" in df_map.columns else iso_col,
-            template="plotly_dark" # Dark mode often makes the colors "pop" better
-        )
+            # 5. CLICK HANDLING
+            if selected_point:
+                clicked_iso = selected_point[0]['location']
+                # Match the ISO back to country name
+                match = df_clean[df_clean['iso_code'] == clicked_iso]['country'].unique()
+                if len(match) > 0:
+                    clicked_country = match[0]
+                    if clicked_country not in st.session_state.selected_countries:
+                        st.session_state.selected_countries.append(clicked_country)
+                        st.rerun()
 
-        fig_map.update_layout(
-            height=550, 
-            margin=dict(l=0, r=0, t=50, b=0),
-            geo=dict(showframe=False, showcoastlines=True, projection_type='equirectangular')
-        )
-
-        # 5. RENDER
-        selected_point = plotly_events(
-            fig_map, 
-            click_event=True, 
-            key=f"map_v_final_{selected_year}"
-        )
-
-        # 6. CLICK LOGIC
-        if selected_point:
-            clicked_id = selected_point[0]['location']
-            # Find the match in the original dataframe
-            match = df_clean[df_clean[iso_col] == clicked_id]['country'].unique()
-            if len(match) > 0:
-                clicked_country = match[0]
-                if clicked_country not in st.session_state.selected_countries:
-                    st.session_state.selected_countries.append(clicked_country)
-                    st.rerun()
-
-    except Exception as e:
-        st.error(f"Map Error: {e}")
-        # If plotly_events fails, show the standard chart so user isn't stuck
-        st.plotly_chart(fig_map, use_container_width=True)
+        except Exception as e:
+            st.error(f"Logic Error: {e}")
+            # Fallback: Just show the static chart if the click-wrapper is failing
+            st.plotly_chart(fig_map, use_container_width=True)
 # --- RIGHT: LINKED TIME-SERIES ---
 with row1_col2:
     st.subheader("Comparative Time-Series Analysis")
