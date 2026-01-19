@@ -14,7 +14,7 @@ st.set_page_config(page_title="Global CO2 Dashboard", layout="wide")
 @st.cache_data
 def load_all_data():
     # Historical Data
-    df_clean = pd.read_csv("your_data.csv")
+    df_clean = pd.read_csv("df_clean.csv")
     # ML Results (the CSV you created earlier)
     df_ml = pd.read_csv("model_results.csv")
     df_ml['Residuals'] = df_ml['Actual'] - df_ml['Predicted']
@@ -121,4 +121,5 @@ else:
         ax_res.axhline(0, color='black', linestyle='--')
         st.pyplot(fig_res)
     else:
+
         st.warning("Please select a continent.")
