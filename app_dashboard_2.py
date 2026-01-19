@@ -204,58 +204,58 @@ if not df_ml_filtered.empty:
     row2_col1, row2_col2 = st.columns(2)
 
     with row2_col1:
-    st.subheader("Model Accuracy Analysis")
-    plt.clf()
-    
-    # JointGrid is 7x7 (Aspect Ratio 1:1)
-    g = sns.JointGrid(
-        data=df_ml_filtered, 
-        x='Actual', 
-        y='Predicted', 
-        hue='Continent', 
-        palette="colorblind", 
-        height=7
-    )
-    
-    g.plot_joint(sns.scatterplot, alpha=0.5, s=60, edgecolor='w') 
-    g.plot_marginals(sns.kdeplot, fill=True, alpha=0.3)
-    
-    # Identity line
-    lims = [min(df_ml_filtered['Actual'].min(), df_ml_filtered['Predicted'].min()),
-            max(df_ml_filtered['Actual'].max(), df_ml_filtered['Predicted'].max())]
-    g.ax_joint.plot(lims, lims, 'k--', alpha=0.6, label='Identity Line')
-    
-    g.ax_joint.set_title("Actual vs. Predicted CO₂", pad=25, fontweight='bold')
-    g.ax_joint.set_xlabel("Actual (Tonnes/Capita)")
-    g.ax_joint.set_ylabel("Predicted (Tonnes/Capita)")
-    
-    # use_container_width ensures it fills the column; 1:1 ratio maintains height
-    st.pyplot(g.fig, use_container_width=True)
+        st.subheader("Model Accuracy Analysis")
+        plt.clf()
+        
+        # JointGrid is 7x7 (Aspect Ratio 1:1)
+        g = sns.JointGrid(
+            data=df_ml_filtered, 
+            x='Actual', 
+            y='Predicted', 
+            hue='Continent', 
+            palette="colorblind", 
+            height=7
+        )
+        
+        g.plot_joint(sns.scatterplot, alpha=0.5, s=60, edgecolor='w') 
+        g.plot_marginals(sns.kdeplot, fill=True, alpha=0.3)
+        
+        # Identity line
+        lims = [min(df_ml_filtered['Actual'].min(), df_ml_filtered['Predicted'].min()),
+                max(df_ml_filtered['Actual'].max(), df_ml_filtered['Predicted'].max())]
+        g.ax_joint.plot(lims, lims, 'k--', alpha=0.6, label='Identity Line')
+        
+        g.ax_joint.set_title("Actual vs. Predicted CO₂", pad=25, fontweight='bold')
+        g.ax_joint.set_xlabel("Actual (Tonnes/Capita)")
+        g.ax_joint.set_ylabel("Predicted (Tonnes/Capita)")
+        
+        # use_container_width ensures it fills the column; 1:1 ratio maintains height
+        st.pyplot(g.fig, use_container_width=True)
 
-with row2_col2:
-    st.subheader("Residual Error Distribution Analysis")
-    
-    # Match the JointGrid aspect ratio exactly (7x7)
-    fig_res, ax_res = plt.subplots(figsize=(7, 7))
-    
-    sns.scatterplot(
-        data=df_ml_filtered, 
-        x='Predicted', 
-        y='Residuals', 
-        hue='Continent', 
-        palette="colorblind", 
-        alpha=0.5, 
-        ax=ax_res
-    )
-    
-    ax_res.axhline(0, color='black', linestyle='--', linewidth=2)
-    
-    ax_res.set_title("Residual Plot: Detecting Bias", pad=20, fontweight='bold')
-    ax_res.set_xlabel("Predicted CO₂ (Tonnes/Capita)")
-    ax_res.set_ylabel("Residual Deviation (Tonnes/Capita)")
-    
-    sns.move_legend(ax_res, "lower left", title="Continent", fontsize='small')
-    
-    # tight_layout is crucial to prevent labels from changing the figure's outer dimensions
-    fig_res.tight_layout()
-    st.pyplot(fig_res, use_container_width=True)
+    with row2_col2:
+        st.subheader("Residual Error Distribution Analysis")
+        
+        # Match the JointGrid aspect ratio exactly (7x7)
+        fig_res, ax_res = plt.subplots(figsize=(7, 7))
+        
+        sns.scatterplot(
+            data=df_ml_filtered, 
+            x='Predicted', 
+            y='Residuals', 
+            hue='Continent', 
+            palette="colorblind", 
+            alpha=0.5, 
+            ax=ax_res
+        )
+        
+        ax_res.axhline(0, color='black', linestyle='--', linewidth=2)
+        
+        ax_res.set_title("Residual Plot: Detecting Bias", pad=20, fontweight='bold')
+        ax_res.set_xlabel("Predicted CO₂ (Tonnes/Capita)")
+        ax_res.set_ylabel("Residual Deviation (Tonnes/Capita)")
+        
+        sns.move_legend(ax_res, "lower left", title="Continent", fontsize='small')
+        
+        # tight_layout is crucial to prevent labels from changing the figure's outer dimensions
+        fig_res.tight_layout()
+        st.pyplot(fig_res, use_container_width=True)
