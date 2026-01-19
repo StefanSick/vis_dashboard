@@ -10,10 +10,24 @@ st.set_page_config(page_title="Global CO2 Analysis & Prediction Dashboard", layo
 
 @st.cache_data
 def load_all_data():
+<<<<<<< HEAD
     # Using dummy data creation for demonstration; replace with your pd.read_csv calls
     df_clean = pd.read_csv("df_clean.csv")
     df_world = pd.read_csv("df_world.csv")
     return df_clean, df_world
+=======
+    try:
+        df_clean = pd.read_csv("df_clean.csv")
+        df_world = pd.read_csv("df_world.csv")
+        if 'country' in df_world.columns:
+            df_world['country'] = df_world['country'].astype(str).str.strip()
+        df_ml = pd.read_csv("model_results.csv")
+        df_ml['Residuals'] = df_ml['Actual'] - df_ml['Predicted']
+        return df_clean, df_world, df_ml
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        st.stop()
+>>>>>>> 6ab093c97be6f41264f3f7d582b45ba3da865a8c
 
 df_clean, df_world = load_all_data()
 
