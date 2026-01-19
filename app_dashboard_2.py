@@ -19,7 +19,7 @@ def load_all_data():
         df_world = pd.read_csv("df_world.csv")
         df_ml = pd.read_csv("model_results.csv")
         df_ml['Residuals'] = df_ml['Actual'] - df_ml['Predicted']
-        return df_clean, df_ml
+        return df_clean, df_world, df_ml
     except Exception as e:
         st.error(f"Error loading data: {e}")
         st.stop()
