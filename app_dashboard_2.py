@@ -52,8 +52,14 @@ with row1_col1:
             line_dash="country", markers=True,
             color_discrete_sequence=px.colors.qualitative.Safe,
             template="plotly_white", 
-            title=f"Evolution of Annual CO₂ Emissions per Capita({year_range[0]} - {year_range[1]})"
+            title=f"Evolution of Annual CO₂ Emissions per Capita({year_range[0]} - {year_range[1]})",
+            labels={
+            "year": "Year",
+            "co2_per_capita": "CO₂ per Capita (tonnes)",
+            "country": "Nation"
+            }
         )
+        
         fig_line.update_layout(hovermode="x unified", legend=dict(orientation="h", y=-0.2))
         st.plotly_chart(fig_line, use_container_width=True)
 
