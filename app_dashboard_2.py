@@ -16,6 +16,7 @@ st.set_page_config(page_title="Global CO2 Analysis & Prediction Dashboard", layo
 def load_all_data():
     try:
         df_clean = pd.read_csv("df_clean.csv")
+        df_world = pd.read_csv("df_world.csv")
         df_ml = pd.read_csv("model_results.csv")
         df_ml['Residuals'] = df_ml['Actual'] - df_ml['Predicted']
         return df_clean, df_ml
@@ -23,7 +24,7 @@ def load_all_data():
         st.error(f"Error loading data: {e}")
         st.stop()
 
-df_clean, df_ml = load_all_data()
+df_clean, df_world, df_ml = load_all_data()
 st.title("Global CO₂ Emissions: Historical Trends & Machine Learning Evaluation")
 st.markdown("---")
 
