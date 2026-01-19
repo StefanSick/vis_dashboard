@@ -109,40 +109,52 @@ with row1_col1:
     
     df_map = df_clean[df_clean['year'] == selected_year]
 
-    # Map with your specific labels
-    fig_map = px.choropleth(
-        df_map,
-        locations="iso_code",
-        z="co2_per_capita",
-        locationmode="ISO-3",
-        colorscale="Viridis",
-        # Updated expressive labeling here:
-        labels={'co2_per_capita': 'Annual CO₂ per Capita (tonnes)'},
-        title=f"Global Annual CO₂ per Capita (tonnes) in {selected_year}",
-        hover_name="country"
-    )
-    
-    fig_map.update_layout(height=550, margin=dict(l=0, r=0, t=50, b=0),
-                          geo=dict(projection_type="natural earth"))
-
-    # Capture click events to trigger the 'Brush' to the next graph
-    selected_point = plotly_events(fig_map, click_event=True, hover_event=False)
-
-    if selected_point:
-        clicked_index = selected_point[0]['pointNumber']
-        clicked_country = df_map.iloc[clicked_index]['country']
+    # FIX: Using Plotly Express (px) which accepts 'z' as a column name
+    try:
+        fig_map = px.choropleth(
+            df_map,
+            locations="iso_code",        # The column with ISO-3 codes
+            z="co2_per_capita",          # The column with numeric values
+            locationmode="ISO-3",
+            colorscale="Viridis",
+            labels={'co2_per_capita': 'Annual CO₂ per Capita (tonnes)'},
+            title=f"Global Annual CO₂ per Capita (tonnes) in {selected_year}",
+            hover_name="country"
+        )
         
-        if clicked_country not in st.session_state.selected_countries:
-            st.session_state.selected_countries.append(clicked_country)
-            st.rerun()
+        fig_map.update_layout(
+            height=550, 
+            margin=dict(l=0, r=0, t=50, b=0),
+            geo=dict(projection_type="natural earth")
+        )
+
+        # Capture click events (This is your "Brushing" trigger)
+        selected_point = plotly_events(fig_map, click_event=True, hover_event=False)
+
+        if selected_point:
+            # When clicked, add the country to the session state for the line graph
+            clicked_index = selected_point[0]['pointNumber']
+            clicked_country = df_map.iloc[clicked_index]['country']
+            
+            if clicked_country not in st.session_state.selected_countries:
+                st.session_state.selected_countries.append(clicked_country)
+                st.rerun()
+                
+        st.plotly_chart(fig_map, use_container_width=True)
+
+    except Exception as e:
+        st.error(f"Error building map: {e}")
+        st.info("Check if your columns are named exactly 'iso_code', 'co2_per_capita', and 'country'.")
 
 # --- RIGHT: LINKED TIME-SERIES ---
 with row1_col2:
     st.subheader("Comparative Time-Series Analysis")
     
     all_countries = sorted(df_clean['country'].unique())
+    
+    # Sync the selection with the map clicks
     chosen = st.multiselect(
-        "Select Specific Countries or Regions for Comparison:", 
+        "Select Countries/Regions (Click map to add):", 
         all_countries, 
         default=st.session_state.selected_countries,
         key="country_selector"
@@ -150,7 +162,7 @@ with row1_col2:
     st.session_state.selected_countries = chosen
 
     y_min, y_max = int(df_clean['year'].min()), int(df_clean['year'].max())
-    year_range = st.slider("Select Temporal Range for Trend Analysis", y_min, y_max, (y_min, y_max))
+    year_range = st.slider("Select Temporal Range", y_min, y_max, (y_min, y_max))
 
     mask = (df_clean['country'].isin(st.session_state.selected_countries)) & \
            (df_clean['year'].between(year_range[0], year_range[1]))
@@ -162,15 +174,13 @@ with row1_col2:
             line_dash="country", markers=True,
             color_discrete_sequence=px.colors.qualitative.Safe,
             template="plotly_white", 
-            # Updated expressive labeling here:
-            title=f"Trend Analysis: Annual CO₂ per Capita (tonnes) Over Time",
+            title=f"Trend: Annual CO₂ per Capita (tonnes)",
             labels={'co2_per_capita': 'Annual CO₂ per Capita (tonnes)', 'year': 'Year'}
         )
         fig_line.update_layout(height=500, hovermode="x unified", legend=dict(orientation="h", y=-0.2))
         st.plotly_chart(fig_line, use_container_width=True)
     else:
-        st.info("Click a country on the map to automatically add it to this trend analysis.")
-
+        st.info("Click a country on the map to add it to this trend analysis.")
 st.markdown("---")
 
 st.header("Part 2: Machine Learning Model Performance")
