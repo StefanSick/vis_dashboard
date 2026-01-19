@@ -95,47 +95,127 @@ st.markdown("---")
 # ==========================================
 st.header("Part 2: Machine Learning Model Performance")
 
+# all_conts = sorted(df_ml['Continent'].unique())
+# sel_conts = st.multiselect("Filter Regression Analysis by Continent", all_conts, default=all_conts)
+# df_ml_filtered = df_ml[df_ml['Continent'].isin(sel_conts)]
+
+# if not df_ml_filtered.empty:
+#     mae = mean_absolute_error(df_ml_filtered['Actual'], df_ml_filtered['Predicted'])
+#     r2 = r2_score(df_ml_filtered['Actual'], df_ml_filtered['Predicted'])
+    
+#     m_col1, m_col2 = st.columns(2)
+#     m_col1.metric("Mean Absolute Error (MAE)", f"{mae:.4f}")
+#     m_col2.metric("Coefficient of Determination (R² Score)", f"{r2:.4f}")
+
+#     row2_col1, row2_col2 = st.columns(2)
+
+#     # with row2_col1:
+#     #     st.subheader("Model Accuracy Analysis (Tonnes per Capita)")
+#     #     plt.clf()
+#     #     # JointGrid doesn't accept legend location directly in plot_joint, 
+#     #     # so we disable the default legend and add it to the ax_joint
+#     #     g = sns.JointGrid(data=df_ml_filtered, x='Actual Observation', y='Predicted Values', hue='Continent', palette="colorblind", height=7)
+#     #     g.plot_joint(sns.scatterplot, alpha=0.5, s=60, edgecolor='w', legend=False) 
+#     #     g.plot_marginals(sns.kdeplot, fill=True, alpha=0.3)
+        
+#     #     # Perfect prediction identity line
+#     #     lims = [min(df_ml_filtered['Actual'].min(), df_ml_filtered['Predicted'].min()),
+#     #             max(df_ml_filtered['Actual'].max(), df_ml_filtered['Predicted'].max())]
+#     #     g.ax_joint.plot(lims, lims, 'k--', alpha=0.6, label='Perfect Prediction Identity Line')
+        
+#     #     # MANUALLY ADD LEGEND TO LOWER RIGHT
+#     #     g.ax_joint.legend(loc='lower right', title="Continent", fontsize='small')
+        
+#     #     g.ax_joint.set_title("Actual Observed vs. Model-Predicted CO₂ Values", pad=25)
+#     #     st.pyplot(g.fig)
+
+#     with row2_col1:
+#     # Title focuses on the purpose of the plot
+#         st.subheader("Model Accuracy Analysis")
+#         plt.clf()
+        
+#         # 1. Initialize JointGrid 
+#         # (Note: data= uses the column names, but we set descriptive labels below)
+#         g = sns.JointGrid(
+#             data=df_ml_filtered, 
+#             x='Actual', 
+#             y='Predicted', 
+#             hue='Continent', 
+#             palette="colorblind", 
+#             height=7
+#         )
+        
+#         # 2. Plot the scatter points (legend=False so we can build it manually)
+#         g.plot_joint(sns.scatterplot, alpha=0.5, s=60, edgecolor='w', legend=False) 
+#         g.plot_marginals(sns.kdeplot, fill=True, alpha=0.3)
+        
+#         # 3. Add the Identity Line
+#         lims = [min(df_ml_filtered['Actual'].min(), df_ml_filtered['Predicted'].min()),
+#                 max(df_ml_filtered['Actual'].max(), df_ml_filtered['Predicted'].max())]
+#         line_label = 'Perfect Prediction Identity Line'
+#         g.ax_joint.plot(lims, lims, 'k--', alpha=0.6, label=line_label)
+        
+#         # --- FIX: COMBINE CONTINENTS AND REFERENCE LINE IN LEGEND ---
+#         # We collect all handles (icons) and labels (text) currently on the joint axis
+#         handles, labels = g.ax_joint.get_legend_handles_labels()
+        
+#         # We place the combined legend in the lower right
+#         g.ax_joint.legend(
+#             handles=handles, 
+#             labels=labels, 
+#             loc='lower right', 
+#             title="Continent / Reference", 
+#             fontsize='small',
+#             framealpha=0.7
+#         )
+        
+#         # 4. SET DESCRIPTIVE AXIS LABELS WITH UNITS
+#         g.ax_joint.set_title("Actual Observed vs. Model-Predicted CO₂ Values", pad=25)
+#         g.ax_joint.set_xlabel("Actual Observed CO₂ Emissions (Tonnes per Capita)")
+#         g.ax_joint.set_ylabel("Model-Predicted CO₂ Emissions (Tonnes per Capita)")
+        
+#         st.pyplot(g.fig)
+            
+
+
+#     with row2_col2:
+#         st.subheader("Residual Error Distribution Analysis")
+#         fig_res, ax_res = plt.subplots(figsize=(10, 7.5))
+#         sns.scatterplot(data=df_ml_filtered, x='Predicted', y='Residuals', hue='Continent', palette="colorblind", alpha=0.5, ax=ax_res)
+        
+#         ax_res.axhline(0, color='black', linestyle='--', linewidth=2)
+        
+#         # MANUALLY MOVE LEGEND TO LOWER LEFT
+#         sns.move_legend(ax_res, "lower left", title="Continent")
+        
+#         ax_res.set_title("Residual Plot: Detecting Systematic Bias and Variance in Predictions", pad=15)
+#         ax_res.set_xlabel("Predicted CO₂ Emissions (Tonnes Per Capita)")
+#         ax_res.set_ylabel("Residual Deviation (Actual - Predicted)")
+#         st.pyplot(fig_res)
+# else:
+#     st.warning("No continents selected. Please update the filters above.")
+st.header("🤖 Part 2: Machine Learning Model Performance")
+
 all_conts = sorted(df_ml['Continent'].unique())
-sel_conts = st.multiselect("Filter Regression Analysis by Continent", all_conts, default=all_conts)
+sel_conts = st.multiselect("Filter Analysis by Continent", all_conts, default=all_conts)
 df_ml_filtered = df_ml[df_ml['Continent'].isin(sel_conts)]
 
 if not df_ml_filtered.empty:
+    # Top-level Metrics
+    m_col1, m_col2 = st.columns(2)
     mae = mean_absolute_error(df_ml_filtered['Actual'], df_ml_filtered['Predicted'])
     r2 = r2_score(df_ml_filtered['Actual'], df_ml_filtered['Predicted'])
-    
-    m_col1, m_col2 = st.columns(2)
     m_col1.metric("Mean Absolute Error (MAE)", f"{mae:.4f}")
     m_col2.metric("Coefficient of Determination (R² Score)", f"{r2:.4f}")
 
+    # The Grid Layout for Plots
     row2_col1, row2_col2 = st.columns(2)
 
-    # with row2_col1:
-    #     st.subheader("Model Accuracy Analysis (Tonnes per Capita)")
-    #     plt.clf()
-    #     # JointGrid doesn't accept legend location directly in plot_joint, 
-    #     # so we disable the default legend and add it to the ax_joint
-    #     g = sns.JointGrid(data=df_ml_filtered, x='Actual Observation', y='Predicted Values', hue='Continent', palette="colorblind", height=7)
-    #     g.plot_joint(sns.scatterplot, alpha=0.5, s=60, edgecolor='w', legend=False) 
-    #     g.plot_marginals(sns.kdeplot, fill=True, alpha=0.3)
-        
-    #     # Perfect prediction identity line
-    #     lims = [min(df_ml_filtered['Actual'].min(), df_ml_filtered['Predicted'].min()),
-    #             max(df_ml_filtered['Actual'].max(), df_ml_filtered['Predicted'].max())]
-    #     g.ax_joint.plot(lims, lims, 'k--', alpha=0.6, label='Perfect Prediction Identity Line')
-        
-    #     # MANUALLY ADD LEGEND TO LOWER RIGHT
-    #     g.ax_joint.legend(loc='lower right', title="Continent", fontsize='small')
-        
-    #     g.ax_joint.set_title("Actual Observed vs. Model-Predicted CO₂ Values", pad=25)
-    #     st.pyplot(g.fig)
-
     with row2_col1:
-    # Title focuses on the purpose of the plot
         st.subheader("Model Accuracy Analysis")
         plt.clf()
         
-        # 1. Initialize JointGrid 
-        # (Note: data= uses the column names, but we set descriptive labels below)
+        # height=7 is the specific size for JointGrid
         g = sns.JointGrid(
             data=df_ml_filtered, 
             x='Actual', 
@@ -145,52 +225,57 @@ if not df_ml_filtered.empty:
             height=7
         )
         
-        # 2. Plot the scatter points (legend=False so we can build it manually)
-        g.plot_joint(sns.scatterplot, alpha=0.5, s=60, edgecolor='w', legend=False) 
+        g.plot_joint(sns.scatterplot, alpha=0.5, s=60, edgecolor='w') 
         g.plot_marginals(sns.kdeplot, fill=True, alpha=0.3)
         
-        # 3. Add the Identity Line
+        # Perfect prediction identity line
         lims = [min(df_ml_filtered['Actual'].min(), df_ml_filtered['Predicted'].min()),
                 max(df_ml_filtered['Actual'].max(), df_ml_filtered['Predicted'].max())]
-        line_label = 'Perfect Prediction Identity Line'
-        g.ax_joint.plot(lims, lims, 'k--', alpha=0.6, label=line_label)
+        g.ax_joint.plot(lims, lims, 'k--', alpha=0.6, label='Perfect Prediction Identity Line')
         
-        # --- FIX: COMBINE CONTINENTS AND REFERENCE LINE IN LEGEND ---
-        # We collect all handles (icons) and labels (text) currently on the joint axis
+        # Combine Continents and Line into one legend
         handles, labels = g.ax_joint.get_legend_handles_labels()
-        
-        # We place the combined legend in the lower right
         g.ax_joint.legend(
             handles=handles, 
             labels=labels, 
             loc='lower right', 
             title="Continent / Reference", 
             fontsize='small',
-            framealpha=0.7
+            framealpha=0.8
         )
         
-        # 4. SET DESCRIPTIVE AXIS LABELS WITH UNITS
-        g.ax_joint.set_title("Actual Observed vs. Model-Predicted CO₂ Values", pad=25)
+        # Descriptive Titles and Axis Labels
+        g.ax_joint.set_title("Actual Observed vs. Model-Predicted CO₂ Values", pad=25, fontweight='bold')
         g.ax_joint.set_xlabel("Actual Observed CO₂ Emissions (Tonnes per Capita)")
         g.ax_joint.set_ylabel("Model-Predicted CO₂ Emissions (Tonnes per Capita)")
         
         st.pyplot(g.fig)
-            
-
 
     with row2_col2:
         st.subheader("Residual Error Distribution Analysis")
-        fig_res, ax_res = plt.subplots(figsize=(10, 7.5))
-        sns.scatterplot(data=df_ml_filtered, x='Predicted', y='Residuals', hue='Continent', palette="colorblind", alpha=0.5, ax=ax_res)
+        # figsize=(10, 8.5) compensates for the lack of marginal plots to match the height
+        fig_res, ax_res = plt.subplots(figsize=(10, 8.5))
+        
+        sns.scatterplot(
+            data=df_ml_filtered, 
+            x='Predicted', 
+            y='Residuals', 
+            hue='Continent', 
+            palette="colorblind", 
+            alpha=0.5, 
+            ax=ax_res
+        )
         
         ax_res.axhline(0, color='black', linestyle='--', linewidth=2)
         
-        # MANUALLY MOVE LEGEND TO LOWER LEFT
-        sns.move_legend(ax_res, "lower left", title="Continent")
+        # Move legend to lower left
+        sns.move_legend(ax_res, "lower left", title="Continent", framealpha=0.7)
         
-        ax_res.set_title("Residual Plot: Detecting Systematic Bias and Variance in Predictions", pad=15)
-        ax_res.set_xlabel("Predicted CO₂ Emissions (Tonnes Per Capita)")
-        ax_res.set_ylabel("Residual Deviation (Actual - Predicted)")
+        # Descriptive Titles and Axis Labels
+        ax_res.set_title("Residual Plot: Detecting Systematic Bias in Predictions", pad=20, fontweight='bold')
+        ax_res.set_xlabel("Model-Predicted CO₂ Emissions (Tonnes per Capita)")
+        ax_res.set_ylabel("Residual Deviation / Error (Tonnes per Capita)")
+        
         st.pyplot(fig_res)
 else:
-    st.warning("No continents selected. Please update the filters above.")
+    st.warning("Please select a continent to populate the model performance data.")
