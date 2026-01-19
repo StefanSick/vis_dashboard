@@ -111,6 +111,7 @@ with row1_col1:
     df_map = df_clean[df_clean['year'] == selected_year]
 
     try:
+        # Using Plotly Express for the interactive map
         fig_map = px.choropleth(
             data_frame=df_map,
             locations="iso_code",
@@ -126,9 +127,10 @@ with row1_col1:
                               geo=dict(projection_type="natural earth"))
 
         # Captured click events act as the 'Brush' to add countries to the next plot
-        selected_point = plotly_events(fig_map, click_event=True, hover_event=False, key="map_events")
+        selected_point = plotly_events(fig_map, click_event=True, hover_event=False, key=f"map_events_{selected_year}")
 
         if selected_point:
+            # Look up the country name based on the clicked index
             clicked_index = selected_point[0]['pointNumber']
             clicked_country = df_map.iloc[clicked_index]['country']
             
@@ -143,7 +145,7 @@ with row1_col1:
 with row1_col2:
     st.subheader("Comparative Time-Series Analysis")
     
-    # NEW: Clear Selection Button
+    # CLEAR SELECTION BUTTON
     if st.button("🗑️ Clear All Selections"):
         st.session_state.selected_countries = ["World"]
         st.rerun()
@@ -157,6 +159,7 @@ with row1_col2:
         default=st.session_state.selected_countries,
         key="country_selector"
     )
+    # Update memory if user adds/removes via the multiselect directly
     st.session_state.selected_countries = chosen
 
     y_min, y_max = int(df_clean['year'].min()), int(df_clean['year'].max())
@@ -178,7 +181,7 @@ with row1_col2:
         fig_line.update_layout(height=500, hovermode="x unified", legend=dict(orientation="h", y=-0.2))
         st.plotly_chart(fig_line, use_container_width=True)
     else:
-        st.info("Click a country on the map to automatically add it to this comparison graph.")
+        st.info("💡 Click a country on the map to automatically add it to this comparison graph.")
 st.markdown("---")
 
 st.header("Part 2: Machine Learning Model Performance")
