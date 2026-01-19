@@ -24,13 +24,13 @@ def load_all_data():
 
 df_clean, df_ml = load_all_data()
 
-st.title("🌍 Global CO₂ Emissions: Historical Trends & Machine Learning Evaluation")
+st.title("Global CO₂ Emissions: Historical Trends & Machine Learning Evaluation")
 st.markdown("---")
 
 # ==========================================
 # ROW 1: HISTORICAL EMISSIONS ANALYSIS
 # ==========================================
-st.header("📊 Part 1: Historical Emissions Analysis")
+st.header("Part 1: Historical Emissions Analysis")
 row1_col1, row1_col2 = st.columns([1, 1])
 
 with row1_col1:
@@ -93,7 +93,7 @@ st.markdown("---")
 # ==========================================
 # ROW 2: MACHINE LEARNING MODEL EVALUATIONS
 # ==========================================
-st.header("🤖 Part 2: Machine Learning Model Performance")
+st.header("Part 2: Machine Learning Model Performance")
 
 all_conts = sorted(df_ml['Continent'].unique())
 sel_conts = st.multiselect("Filter Regression Analysis by Continent", all_conts, default=all_conts)
@@ -109,25 +109,74 @@ if not df_ml_filtered.empty:
 
     row2_col1, row2_col2 = st.columns(2)
 
+    # with row2_col1:
+    #     st.subheader("Model Accuracy Analysis (Tonnes per Capita)")
+    #     plt.clf()
+    #     # JointGrid doesn't accept legend location directly in plot_joint, 
+    #     # so we disable the default legend and add it to the ax_joint
+    #     g = sns.JointGrid(data=df_ml_filtered, x='Actual Observation', y='Predicted Values', hue='Continent', palette="colorblind", height=7)
+    #     g.plot_joint(sns.scatterplot, alpha=0.5, s=60, edgecolor='w', legend=False) 
+    #     g.plot_marginals(sns.kdeplot, fill=True, alpha=0.3)
+        
+    #     # Perfect prediction identity line
+    #     lims = [min(df_ml_filtered['Actual'].min(), df_ml_filtered['Predicted'].min()),
+    #             max(df_ml_filtered['Actual'].max(), df_ml_filtered['Predicted'].max())]
+    #     g.ax_joint.plot(lims, lims, 'k--', alpha=0.6, label='Perfect Prediction Identity Line')
+        
+    #     # MANUALLY ADD LEGEND TO LOWER RIGHT
+    #     g.ax_joint.legend(loc='lower right', title="Continent", fontsize='small')
+        
+    #     g.ax_joint.set_title("Actual Observed vs. Model-Predicted CO₂ Values", pad=25)
+    #     st.pyplot(g.fig)
+
     with row2_col1:
-        st.subheader("Regression Accuracy Analysis")
+    # Title focuses on the purpose of the plot
+        st.subheader("Model Accuracy Analysis")
         plt.clf()
-        # JointGrid doesn't accept legend location directly in plot_joint, 
-        # so we disable the default legend and add it to the ax_joint
-        g = sns.JointGrid(data=df_ml_filtered, x='Actual', y='Predicted', hue='Continent', palette="colorblind", height=7)
+        
+        # 1. Initialize JointGrid 
+        # (Note: data= uses the column names, but we set descriptive labels below)
+        g = sns.JointGrid(
+            data=df_ml_filtered, 
+            x='Actual', 
+            y='Predicted', 
+            hue='Continent', 
+            palette="colorblind", 
+            height=7
+        )
+        
+        # 2. Plot the scatter points (legend=False so we can build it manually)
         g.plot_joint(sns.scatterplot, alpha=0.5, s=60, edgecolor='w', legend=False) 
         g.plot_marginals(sns.kdeplot, fill=True, alpha=0.3)
         
-        # Perfect prediction identity line
+        # 3. Add the Identity Line
         lims = [min(df_ml_filtered['Actual'].min(), df_ml_filtered['Predicted'].min()),
                 max(df_ml_filtered['Actual'].max(), df_ml_filtered['Predicted'].max())]
-        g.ax_joint.plot(lims, lims, 'k--', alpha=0.7, label='Perfect Prediction Identity Line')
+        line_label = 'Perfect Prediction Identity Line'
+        g.ax_joint.plot(lims, lims, 'k--', alpha=0.6, label=line_label)
         
-        # MANUALLY ADD LEGEND TO LOWER RIGHT
-        g.ax_joint.legend(loc='lower right', title="Continent", fontsize='small')
+        # --- FIX: COMBINE CONTINENTS AND REFERENCE LINE IN LEGEND ---
+        # We collect all handles (icons) and labels (text) currently on the joint axis
+        handles, labels = g.ax_joint.get_legend_handles_labels()
         
+        # We place the combined legend in the lower right
+        g.ax_joint.legend(
+            handles=handles, 
+            labels=labels, 
+            loc='lower right', 
+            title="Continent / Reference", 
+            fontsize='small',
+            framealpha=0.7
+        )
+        
+        # 4. SET DESCRIPTIVE AXIS LABELS WITH UNITS
         g.ax_joint.set_title("Actual Observed vs. Model-Predicted CO₂ Values", pad=25)
+        g.ax_joint.set_xlabel("Actual Observed CO₂ Emissions (Tonnes per Capita)")
+        g.ax_joint.set_ylabel("Model-Predicted CO₂ Emissions (Tonnes per Capita)")
+        
         st.pyplot(g.fig)
+            
+
 
     with row2_col2:
         st.subheader("Residual Error Distribution Analysis")
