@@ -40,54 +40,65 @@ row1_col1, row1_col2 = st.columns([1, 1])
 # --- LEFT: GEOSPATIAL SELECTOR (THE BRUSH) ---
 with row1_col1:
     st.subheader("Geospatial Distribution Analysis")
+    
+    # 1. Get the year and filter
     available_years = sorted(df_clean['year'].unique(), reverse=True)
     selected_year = st.selectbox("Select Year", available_years, key="map_year")
-    
-    # --- CLEANING & PREP ---
     df_map = df_clean[df_clean['year'] == selected_year].copy()
+
+    # 2. DYNAMIC COLUMN DETECTION 
+    # This prevents the "countries are gone" issue if names are slightly different
+    iso_col = [c for c in df_map.columns if 'iso' in c.lower()]
+    val_col = [c for c in df_map.columns if 'co2' in c.lower() and 'capita' in c.lower()]
     
-    # Force ISO codes to uppercase and remove spaces
-    df_map['iso_code'] = df_map['iso_code'].astype(str).str.upper().str.strip()
+    if not iso_col or not val_col:
+        st.error(f"Could not find columns. Found: {list(df_map.columns)}")
+        st.stop()
     
-    # Force the color column to be numeric (errors='coerce' turns text into NaN)
-    df_map['co2_per_capita'] = pd.to_numeric(df_map['co2_per_capita'], errors='coerce')
+    iso_col, val_col = iso_col[0], val_col[0]
+
+    # 3. CLEANING
+    df_map[iso_col] = df_map[iso_col].astype(str).str.upper().str.strip()
+    df_map[val_col] = pd.to_numeric(df_map[val_col], errors='coerce')
     
-    # Drop rows that are now NaN so they don't break the renderer
-    df_map = df_map.dropna(subset=['co2_per_capita', 'iso_code'])
+    # Only drop if BOTH are missing; keep the row if at least we have a location
+    df_map = df_map.dropna(subset=[iso_col]) 
 
     try:
-        # We calculate the max across the WHOLE dataset for a consistent color scale
-        max_val = df_clean['co2_per_capita'].max()
+        # 4. BUILD THE MAP
+        # If iso_code length is 3, use ISO-3. If it's longer, it's likely country names.
+        sample_iso = str(df_map[iso_col].iloc[0])
+        mode = "ISO-3" if len(sample_iso) <= 3 else "country names"
 
         fig_map = px.choropleth(
             data_frame=df_map,
-            locations="iso_code",
-            color="co2_per_capita", 
-            locationmode="ISO-3",
+            locations=iso_col,
+            color=val_col,
+            locationmode=mode,
             color_continuous_scale="Viridis",
-            range_color=[0, max_val],  # Forces the color engine to activate
-            hover_name="country",
-            labels={'co2_per_capita': 'Tonnes per Capita'}
+            range_color=[0, df_clean[val_col].max()],
+            hover_name="country" if "country" in df_map.columns else iso_col,
+            template="plotly_dark" # Dark mode often makes the colors "pop" better
         )
-        
+
         fig_map.update_layout(
             height=550, 
             margin=dict(l=0, r=0, t=50, b=0),
-            # This ensures the color bar is actually rendered
-            coloraxis_showscale=True 
+            geo=dict(showframe=False, showcoastlines=True, projection_type='equirectangular')
         )
 
-        # Plotly events
+        # 5. RENDER
         selected_point = plotly_events(
             fig_map, 
             click_event=True, 
-            key=f"map_v4_{selected_year}"
+            key=f"map_v_final_{selected_year}"
         )
 
+        # 6. CLICK LOGIC
         if selected_point:
-            clicked_iso = selected_point[0]['location']
-            # Find the country name by matching the ISO
-            match = df_clean[df_clean['iso_code'] == clicked_iso]['country'].unique()
+            clicked_id = selected_point[0]['location']
+            # Find the match in the original dataframe
+            match = df_clean[df_clean[iso_col] == clicked_id]['country'].unique()
             if len(match) > 0:
                 clicked_country = match[0]
                 if clicked_country not in st.session_state.selected_countries:
@@ -95,7 +106,9 @@ with row1_col1:
                     st.rerun()
 
     except Exception as e:
-        st.error(f"Mapping Error: {e}")
+        st.error(f"Map Error: {e}")
+        # If plotly_events fails, show the standard chart so user isn't stuck
+        st.plotly_chart(fig_map, use_container_width=True)
 # --- RIGHT: LINKED TIME-SERIES ---
 with row1_col2:
     st.subheader("Comparative Time-Series Analysis")
