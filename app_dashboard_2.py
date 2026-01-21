@@ -38,6 +38,7 @@ row1_col1, row1_col2 = st.columns([1, 1])
 
 with row1_col1:
     st.subheader("Comparative Time-Series Analysis of National Emissions")
+    st.caption("")
     #st.caption("How have national emission levels evolved over the decades?")
     
     all_countries = sorted(df_world['country'].unique())
@@ -153,7 +154,7 @@ with row2_col1:
     
     # Short description explaining the marginal plots
     st.markdown("""
-    **Understanding this chart:** The main scatter plot compares actual vs. predicted values. The **density plots on the top and right** (marginal distributions) show where the majority of your data points are concentrated. If a distribution is heavily skewed to the left, it means most countries have low emissions, and the model has less "experience" predicting high-emission outliers.
+    **The main scatter plot compares actual vs. predicted values. The **density plots on the top and right** (marginal distributions) show where the majority of the data points are concentrated. If a distribution is heavily skewed to the left, it means most countries have low emissions, and the model has less "experience" predicting high-emission outliers.
     """)
     
     # Initialize the JointGrid
@@ -190,7 +191,7 @@ with row2_col1:
 
 with row2_col2:
     st.subheader("Error (Residual) Analysis")
-    st.write("Are there specific continents where the model struggles?")
+    st.write("Are there specific continents where the model struggles? \n\n")
     
     fig_res, ax_res = plt.subplots(figsize=(7, 7))
     
