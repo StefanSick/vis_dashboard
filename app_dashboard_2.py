@@ -38,7 +38,7 @@ row1_col1, row1_col2 = st.columns([1, 1])
 
 with row1_col1:
     st.subheader("Comparative Time-Series Analysis of National Emissions")
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
     #st.caption("How have national emission levels evolved over the decades?")
     
     all_countries = sorted(df_world['country'].unique())
