@@ -126,6 +126,63 @@ with row1_col2:
         geo2=dict(projection_type="natural earth", showframe=False)
     )
     st.plotly_chart(fig_map, use_container_width=True)
+st.header("Part 1: Historical Emissions Analysis")
+row1_col1, row1_col2 = st.columns([1, 1])
+
+
+with row1_col2:
+    st.subheader("Global Carbon Footprint Map")
+    
+    # Use matching height to ensure top-alignment of the map
+    with st.container(height=180, border=False):
+        st.caption("Hover over countries to see precise emission metrics.")
+        
+        available_years = sorted(df_clean['year'].unique(), reverse=True)
+        selected_year = st.selectbox("View Data for Year:", available_years, key="map_year")
+    
+    df_map_filtered = df_clean[df_clean['year'] == selected_year]
+
+    fig_map = make_subplots(
+        rows=2, cols=1, 
+        specs=[[{"type": "choropleth"}], [{"type": "choropleth"}]],
+        subplot_titles=(f"Total National Emissions (Million Tonnes, {selected_year})", 
+                        f"Emissions per Person (Tonnes/Capita, {selected_year})"),
+        vertical_spacing=0.1
+    )
+
+    fig_map.add_trace(go.Choropleth(
+        locations=df_map_filtered["iso_code"], 
+        z=df_map_filtered["co2"],
+        locationmode="ISO-3", 
+        colorscale="Viridis",
+        marker_line_color='white', 
+        marker_line_width=0.5,
+        colorbar=dict(
+            title="m/Tonnes", 
+            x=1.02, y=0.78, len=0.4, thickness=15
+        )
+    ), row=1, col=1)
+
+    fig_map.add_trace(go.Choropleth(
+        locations=df_map_filtered["iso_code"], 
+        z=df_map_filtered["co2_per_capita"],
+        locationmode="ISO-3", 
+        colorscale="Viridis",
+        marker_line_color='white',
+        marker_line_width=0.5,
+        colorbar=dict(
+            title="t/Capita", 
+            x=1.02, y=0.22, len=0.4, thickness=15
+        )
+    ), row=2, col=1)
+
+    fig_map.update_layout(
+        height=750, 
+        margin=dict(l=0, r=0, t=60, b=0),
+        geo=dict(projection_type="natural earth", showframe=False),
+        geo2=dict(projection_type="natural earth", showframe=False)
+    )
+    st.plotly_chart(fig_map, use_container_width=True)
 
 st.header("Part 2: Machine Learning Model Performance")
 
