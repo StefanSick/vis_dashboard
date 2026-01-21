@@ -30,17 +30,16 @@ df_clean, df_world, df_ml = load_all_data()
 st.title("Global CO₂ Emissions: Historical Trends & Machine Learning Evaluation")
 st.markdown("---")
 
-
 st.header("Part 1: Historical Emissions Analysis")
 row1_col1, row1_col2 = st.columns([1, 1])
 
-
-
 with row1_col1:
     st.subheader("Comparative Time-Series Analysis of National Emissions")
-    with st.container(height=230, border=False):
+    
+    # Force container height to match the right column
+    with st.container(height=180, border=False):
         st.caption("<br>", unsafe_allow_html=True)
-        # st.caption("How have national emission levels evolved over the decades?") # Restored if needed
+        # st.caption("How have national emission levels evolved over the decades?") 
         
         all_countries = sorted(df_world['country'].unique())
         default_countries = ["World"] if "World" in all_countries else [all_countries[0]]
@@ -53,10 +52,9 @@ with row1_col1:
     df_line = df_world[mask]
 
     if not df_line.empty:
-        # Using 'D3' or 'Bold' which provides more distinct color separation than 'Safe'
         fig_line = px.line(
             df_line, x="year", y="co2_per_capita", color="country", 
-            line_dash="country", # Keeps lines distinct even if colors look similar
+            line_dash="country", 
             markers=True,
             color_discrete_sequence=px.colors.qualitative.D3, 
             template="plotly_white", 
@@ -74,61 +72,6 @@ with row1_col1:
             yaxis_title="CO₂ (Metric Tonnes per Capita)"
         )
         st.plotly_chart(fig_line, use_container_width=True)
-
-with row1_col2:
-    st.subheader("Global Carbon Footprint Map")
-    st.caption("Hover over countries to see precise emission metrics.")
-    
-    available_years = sorted(df_clean['year'].unique(), reverse=True)
-    selected_year = st.selectbox("View Data for Year:", available_years, key="map_year")
-    
-    df_map_filtered = df_clean[df_clean['year'] == selected_year]
-
-    fig_map = make_subplots(
-        rows=2, cols=1, 
-        specs=[[{"type": "choropleth"}], [{"type": "choropleth"}]],
-        subplot_titles=(f"Total National Emissions (Million Tonnes, {selected_year})", 
-                        f"Emissions per Person (Tonnes/Capita, {selected_year})"),
-        vertical_spacing=0.1
-    )
-
-    # Note: 'Viridis' is already the best-practice choice for colorblind accessibility.
-    fig_map.add_trace(go.Choropleth(
-        locations=df_map_filtered["iso_code"], 
-        z=df_map_filtered["co2"],
-        locationmode="ISO-3", 
-        colorscale="Viridis",
-        marker_line_color='white', # Adds borders to countries for better visibility
-        marker_line_width=0.5,
-        colorbar=dict(
-            title="m/Tonnes", 
-            x=1.02, y=0.78, len=0.4, thickness=15
-        )
-    ), row=1, col=1)
-
-    fig_map.add_trace(go.Choropleth(
-        locations=df_map_filtered["iso_code"], 
-        z=df_map_filtered["co2_per_capita"],
-        locationmode="ISO-3", 
-        colorscale="Viridis",
-        marker_line_color='white',
-        marker_line_width=0.5,
-        colorbar=dict(
-            title="t/Capita", 
-            x=1.02, y=0.22, len=0.4, thickness=15
-        )
-    ), row=2, col=1)
-
-    fig_map.update_layout(
-        height=750, 
-        margin=dict(l=0, r=0, t=60, b=0),
-        geo=dict(projection_type="natural earth", showframe=False),
-        geo2=dict(projection_type="natural earth", showframe=False)
-    )
-    st.plotly_chart(fig_map, use_container_width=True)
-st.header("Part 1: Historical Emissions Analysis")
-row1_col1, row1_col2 = st.columns([1, 1])
-
 
 with row1_col2:
     st.subheader("Global Carbon Footprint Map")
@@ -185,6 +128,7 @@ with row1_col2:
     st.plotly_chart(fig_map, use_container_width=True)
 
 st.header("Part 2: Machine Learning Model Performance")
+
 
 # --- Metric Definitions ---
 # $MAE = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|$
