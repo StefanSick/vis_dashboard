@@ -358,10 +358,6 @@ with row1_col2:
 #         # tight_layout is crucial to prevent labels from changing the figure's outer dimensions
 #         fig_res.tight_layout()
 #         st.pyplot(fig_res, use_container_width=True)
-import streamlit as st
-import seaborn as sns
-import matplotlib.pyplot as plt
-from sklearn.metrics import mean_absolute_error, r2_score
 
 st.header("Part 2: Machine Learning Model Performance")
 
@@ -386,74 +382,138 @@ if not df_ml_filtered.empty:
 
     # 2. Visual Analysis Layout
     row2_col1, row2_col2 = st.columns(2)
-
-    with row2_col1:
-        st.subheader("Prediction Accuracy")
-        st.write("Comparing actual values against model estimates.")
-        
-        # Using 'viridis' or 'rocket' which have high luminance contrast for colorblindness
-        # 'colorblind' is good, but for 6+ categories, 'viridis' is often safer.
-        g = sns.JointGrid(
-            data=df_ml_filtered, 
-            x='Actual', 
-            y='Predicted', 
-            hue='Continent', 
-            palette="viridis", # High contrast, perceptually uniform
-            height=7
-        )
-        
-        # Keep shapes consistent (no special markers)
-        g.plot_joint(sns.scatterplot, alpha=0.6, s=70, edgecolor='white', marker='o') 
-        g.plot_marginals(sns.kdeplot, fill=True, alpha=0.3)
-        
-        # Reference Identity Line
-        lims = [df_ml_filtered[['Actual', 'Predicted']].min().min(),
-                df_ml_filtered[['Actual', 'Predicted']].max().max()]
-        g.ax_joint.plot(lims, lims, color='red', linestyle='--', alpha=0.8, label='Perfect Prediction')
-        
-        # Descriptive Labels
-        g.ax_joint.set_title("Actual vs. Predicted CO₂ Emissions", pad=25, fontweight='bold')
-        g.ax_joint.set_xlabel("Measured CO₂ (Tonnes per Capita)")
-        g.ax_joint.set_ylabel("Random Forest Predicted CO₂ (Tonnes per Capita)")
-        
-        st.pyplot(g.fig, use_container_width=True)
-
-    with row2_col2:
-        st.subheader("Error (Residual) Analysis")
-        st.write("Are there specific continents where the model struggles?")
-        
-        fig_res, ax_res = plt.subplots(figsize=(7, 7))
-        
-        sns.scatterplot(
-            data=df_ml_filtered, 
-            x='Predicted', 
-            y='Residuals', 
-            hue='Continent', 
-            palette="viridis", 
-            alpha=0.6, 
-            s=70,
-            marker='o',
-            ax=ax_res
-        )
-        
-        # Zero Error Line
-        ax_res.axhline(0, color='red', linestyle='--', linewidth=2)
-        
-        # Descriptive Labels
-        ax_res.set_title("Residual Plot: Prediction Errors by Scale", pad=20, fontweight='bold')
-        ax_res.set_xlabel("Predicted CO₂ (Tonnes per Capita)")
-        ax_res.set_ylabel("Residual Error (Actual - Predicted)")
-        
-        # Move legend to be more readable
-        sns.move_legend(ax_res, "upper left", bbox_to_anchor=(1, 1), title="Continent")
-        
-        fig_res.tight_layout()
-        st.pyplot(fig_res, use_container_width=True)
-
-    # Descriptive Footnote
-    st.info("""
-    **Understanding the Charts:**
-    * **The Diagonal Line:** Points closer to the red dashed line indicate higher accuracy. 
-    * **The Residual Cloud:** Points above 0 represent under-predictions; points below 0 represent over-predictions. 
-    * **Color Contrast:** We use the 'Viridis' palette, which is designed to be readable in grayscale and for all common types of colorblindness.
+with row2_col1:
+    st.subheader("Model Accuracy & Data Distribution")
+    
+    # Short description explaining the marginal plots
+    st.markdown("""
+    **Understanding this chart:** The main scatter plot compares actual vs. predicted values. The **density plots on the top and right** (marginal distributions) show where the majority of your data points are concentrated. If a distribution is heavily skewed to the left, it means most countries have low emissions, and the model has less "experience" predicting high-emission outliers.
     """)
+    
+    # Initialize the JointGrid
+    g = sns.JointGrid(
+        data=df_ml_filtered, 
+        x='Actual', 
+        y='Predicted', 
+        hue='Continent', 
+        palette="viridis", 
+        height=7
+    )
+    
+    # 1. Main Scatter Plot (The "Joint" part)
+    g.plot_joint(sns.scatterplot, alpha=0.6, s=70, edgecolor='white') 
+    
+    # 2. Marginal Plots (The "Distribution" part)
+    g.plot_marginals(sns.kdeplot, fill=True, alpha=0.3)
+    
+    # 3. Identity Line (Ideal Model)
+    lims = [df_ml_filtered[['Actual', 'Predicted']].min().min(),
+            df_ml_filtered[['Actual', 'Predicted']].max().max()]
+    g.ax_joint.plot(lims, lims, color='red', linestyle='--', alpha=0.7, label='Perfect Prediction ($y=x$)')
+    
+    # Labels & Title
+    g.ax_joint.set_title("Actual vs. Predicted CO₂ Emissions", pad=25, fontweight='bold')
+    g.ax_joint.set_xlabel("Measured Actual (Tonnes/Capita)")
+    g.ax_joint.set_ylabel("RF Model Predicted (Tonnes/Capita)")
+
+    # 4. Legend Position (Bottom Right)
+    # We target the joint axis to place the legend inside the plot area
+    g.ax_joint.legend(loc='lower right', title="Continent", fontsize='small', frameon=True)
+    
+    st.pyplot(g.fig, use_container_width=True)
+
+
+# st.header("Part 2: Machine Learning Model Performance")
+
+# # --- Metric Definitions ---
+# # $MAE = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|$
+# # $R^2 = 1 - \frac{SS_{res}}{SS_{tot}}$
+
+# all_conts = sorted(df_ml['Continent'].unique())
+# sel_conts = st.multiselect("Filter Analysis by Continent", all_conts, default=all_conts)
+# df_ml_filtered = df_ml[df_ml['Continent'].isin(sel_conts)]
+
+# if not df_ml_filtered.empty:
+#     # 1. Top-level Performance Summary
+#     m_col1, m_col2 = st.columns(2)
+#     mae = mean_absolute_error(df_ml_filtered['Actual'], df_ml_filtered['Predicted'])
+#     r2 = r2_score(df_ml_filtered['Actual'], df_ml_filtered['Predicted'])
+    
+#     m_col1.metric("Average Prediction Error (MAE)", f"{mae:.3f} t", 
+#                   help="Mean Absolute Error: On average, how many tonnes the prediction is off.")
+#     m_col2.metric("Model Reliability ($R^2$ Score)", f"{r2:.2%}", 
+#                   help="How much of the CO2 variation is captured by the model (100% is perfect).")
+
+#     # 2. Visual Analysis Layout
+#     row2_col1, row2_col2 = st.columns(2)
+
+#     with row2_col1:
+#         st.subheader("Prediction Accuracy")
+#         st.write("Comparing actual values against model estimates.")
+        
+#         # Using 'viridis' or 'rocket' which have high luminance contrast for colorblindness
+#         # 'colorblind' is good, but for 6+ categories, 'viridis' is often safer.
+#         g = sns.JointGrid(
+#             data=df_ml_filtered, 
+#             x='Actual', 
+#             y='Predicted', 
+#             hue='Continent', 
+#             palette="viridis", # High contrast, perceptually uniform
+#             height=7
+#         )
+        
+#         # Keep shapes consistent (no special markers)
+#         g.plot_joint(sns.scatterplot, alpha=0.6, s=70, edgecolor='white', marker='o') 
+#         g.plot_marginals(sns.kdeplot, fill=True, alpha=0.3)
+        
+#         # Reference Identity Line
+#         lims = [df_ml_filtered[['Actual', 'Predicted']].min().min(),
+#                 df_ml_filtered[['Actual', 'Predicted']].max().max()]
+#         g.ax_joint.plot(lims, lims, color='red', linestyle='--', alpha=0.8, label='Perfect Prediction')
+        
+#         # Descriptive Labels
+#         g.ax_joint.set_title("Actual vs. Predicted CO₂ Emissions", pad=25, fontweight='bold')
+#         g.ax_joint.set_xlabel("Measured CO₂ (Tonnes per Capita)")
+#         g.ax_joint.set_ylabel("Random Forest Predicted CO₂ (Tonnes per Capita)")
+        
+#         st.pyplot(g.fig, use_container_width=True)
+
+#     with row2_col2:
+#         st.subheader("Error (Residual) Analysis")
+#         st.write("Are there specific continents where the model struggles?")
+        
+#         fig_res, ax_res = plt.subplots(figsize=(7, 7))
+        
+#         sns.scatterplot(
+#             data=df_ml_filtered, 
+#             x='Predicted', 
+#             y='Residuals', 
+#             hue='Continent', 
+#             palette="viridis", 
+#             alpha=0.6, 
+#             s=70,
+#             marker='o',
+#             ax=ax_res
+#         )
+        
+#         # Zero Error Line
+#         ax_res.axhline(0, color='red', linestyle='--', linewidth=2)
+        
+#         # Descriptive Labels
+#         ax_res.set_title("Residual Plot: Prediction Errors by Scale", pad=20, fontweight='bold')
+#         ax_res.set_xlabel("Predicted CO₂ (Tonnes per Capita)")
+#         ax_res.set_ylabel("Residual Error (Actual - Predicted)")
+        
+#         # Move legend to be more readable
+#         sns.move_legend(ax_res, "upper left", bbox_to_anchor=(1, 1), title="Continent")
+        
+#         fig_res.tight_layout()
+#         st.pyplot(fig_res, use_container_width=True)
+
+#     # Descriptive Footnote
+#     st.info("""
+#     **Understanding the Charts:**
+#     * **The Diagonal Line:** Points closer to the red dashed line indicate higher accuracy. 
+#     * **The Residual Cloud:** Points above 0 represent under-predictions; points below 0 represent over-predictions. 
+#     * **Color Contrast:** We use the 'Viridis' palette, which is designed to be readable in grayscale and for all common types of colorblindness.
+#     """)
