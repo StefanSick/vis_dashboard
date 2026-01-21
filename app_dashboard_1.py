@@ -33,13 +33,15 @@ st.markdown("---")
 st.header("Part 1: Historical Emissions Analysis")
 row1_col1, row1_col2 = st.columns([1, 1])
 
+
 with row1_col1:
     st.subheader("Comparative Time-Series Analysis of National Emissions")
     
-    # Force container height to match the right column
-    with st.container(height=180, border=False):
-        st.caption("<br>", unsafe_allow_html=True)
-        # st.caption("How have national emission levels evolved over the decades?") 
+    # We use a container with a fixed height to ensure the 'start' of the widgets 
+    # and the 'start' of the graphs underneath are identical in both columns.
+    with st.container(height=210, border=False):
+        # This empty caption balances the 'Hover over...' caption in the right column
+        st.caption("<br>", unsafe_allow_html=True) 
         
         all_countries = sorted(df_world['country'].unique())
         default_countries = ["World"] if "World" in all_countries else [all_countries[0]]
@@ -76,11 +78,13 @@ with row1_col1:
 with row1_col2:
     st.subheader("Global Carbon Footprint Map")
     
-    # Use matching height to ensure top-alignment of the map
-    with st.container(height=180, border=False):
+    # Using the same container height (210) so the selectbox starts at the same line
+    with st.container(height=210, border=False):
         st.caption("Hover over countries to see precise emission metrics.")
         
         available_years = sorted(df_clean['year'].unique(), reverse=True)
+        # To align the dropdown precisely with the multiselect, 
+        # we ensure no extra markdown/spacing is added above this selectbox.
         selected_year = st.selectbox("View Data for Year:", available_years, key="map_year")
     
     df_map_filtered = df_clean[df_clean['year'] == selected_year]
@@ -100,10 +104,7 @@ with row1_col2:
         colorscale="Viridis",
         marker_line_color='white', 
         marker_line_width=0.5,
-        colorbar=dict(
-            title="m/Tonnes", 
-            x=1.02, y=0.78, len=0.4, thickness=15
-        )
+        colorbar=dict(title="m/Tonnes", x=1.02, y=0.78, len=0.4, thickness=15)
     ), row=1, col=1)
 
     fig_map.add_trace(go.Choropleth(
@@ -113,10 +114,7 @@ with row1_col2:
         colorscale="Viridis",
         marker_line_color='white',
         marker_line_width=0.5,
-        colorbar=dict(
-            title="t/Capita", 
-            x=1.02, y=0.22, len=0.4, thickness=15
-        )
+        colorbar=dict(title="t/Capita", x=1.02, y=0.22, len=0.4, thickness=15)
     ), row=2, col=1)
 
     fig_map.update_layout(
