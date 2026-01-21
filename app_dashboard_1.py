@@ -38,15 +38,16 @@ row1_col1, row1_col2 = st.columns([1, 1])
 
 with row1_col1:
     st.subheader("Comparative Time-Series Analysis of National Emissions")
-    st.caption("<br>", unsafe_allow_html=True)
-    #st.caption("How have national emission levels evolved over the decades?")
-    
-    all_countries = sorted(df_world['country'].unique())
-    default_countries = ["World"] if "World" in all_countries else [all_countries[0]]
-    selected_countries = st.multiselect("Select Countries/Regions for Comparison", all_countries, default=default_countries)
-    
-    y_min, y_max = int(df_world['year'].min()), int(df_world['year'].max())
-    year_range = st.slider("Select Analysis Period", y_min, y_max, (y_min, y_max))
+    with st.container(height=230, border=False):
+        st.caption("<br>", unsafe_allow_html=True)
+        # st.caption("How have national emission levels evolved over the decades?") # Restored if needed
+        
+        all_countries = sorted(df_world['country'].unique())
+        default_countries = ["World"] if "World" in all_countries else [all_countries[0]]
+        selected_countries = st.multiselect("Select Countries/Regions for Comparison", all_countries, default=default_countries)
+        
+        y_min, y_max = int(df_world['year'].min()), int(df_world['year'].max())
+        year_range = st.slider("Select Analysis Period", y_min, y_max, (y_min, y_max))
 
     mask = (df_world['country'].isin(selected_countries)) & (df_world['year'].between(year_range[0], year_range[1]))
     df_line = df_world[mask]
@@ -154,7 +155,7 @@ with row2_col1:
     
     # Short description explaining the marginal plots
     st.markdown("""
-    **The **density plots on the top and right** (marginal distributions) show where the majority of the data points are concentrated.
+    The **density plots on the top and right** (marginal distributions) show where the majority of the data points are concentrated.
     """)
     
     # Initialize the JointGrid
@@ -191,8 +192,8 @@ with row2_col1:
 
 with row2_col2:
     st.subheader("Error (Residual) Analysis")
-    st.write("Are there specific continents where the model struggles? \n\n")
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.write("Are there specific continents where the model struggles?")
+    #st.markdown("<br><br>", unsafe_allow_html=True)
     fig_res, ax_res = plt.subplots(figsize=(7, 7))
     
     sns.scatterplot(
